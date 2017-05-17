@@ -1,0 +1,8 @@
+*.Rproj
+*/
+*.docx
+*.pdf
+*.Rhistory
+*.RData
+*.RDataTmp
+*.RDataTmp1

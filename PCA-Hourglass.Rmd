@@ -1,0 +1,283 @@
+---
+title: "PCA-Hourglass"
+author: "Becca"
+date: "Tuesday, June 07, 2016"
+output: html_document
+---
+
+Generate a data set of all OGGs and run prcomp
+OGG files have expression vales for each OGG, at each embyonic stage. Different files are different species
+```{r}
+#requires that the columns are in the same order!
+All.shared.OGG.exp<-do.call("rbind", list(Dan.shared.OGG.exp, Gal.shared.OGG.exp, Mus.shared.OGG.exp, Xlaev.shared.OGG.exp, Xtrop.shared.OGG.exp))
+  
+All_PCA<-prcomp(All.shared.OGG.exp) 
+All_PCs<-All_PCA$x
+sp<-(as.data.frame(rep(c("Danio", "Gallus", "Mus", "X.laevis", "X.tropicalis"), c(15,15,19,15,15))))
+colnames(sp)<-"sp"
+#All_PCs<-cbind(sp, All_PCs)
+summary(All_PCA)
+
+TimeStep<-(as.data.frame(rep(c(-1, 0, 1, -1, 0, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1), c(6,3,6,5,5,5,4,11,4,4,7,4,4,7,4))))
+colnames(TimeStep)<-"time"
+#All_PCs<-cbind(sp, TimeStep, All_PCs)
+
+TimeRank<-c(c(1:15), c(1:15), c(1:19), c(1:15), c(1:15))
+TimeRank<-as.data.frame(TimeRank)
+colnames(TimeRank)<-"timeRank"
+All_PCs<-cbind(sp, TimeStep, TimeRank, All_PCs)
+summary(All_PCs)
+All_PCloadings<-All_PCA$rotation
+
+```
+
+Perfom an ordinal logistic regression: PCs ~ TimeSteps using polr{MASS}
+
+```{r}
+#determine which PCs to include in downstream analysis. Must explain >1% of the variation (arbitraty cut. )
+summary(All_PCA)
+
+library("MASS")
+TimeStepPC_OLR=polr(factor(time) ~ PC1 + PC2 + PC3 + PC4 + PC5 + PC6, All_PCs, method = c("logistic") )
+(ctable <- coef(summary(TimeStepPC_OLR)))
+p <- pnorm(abs(ctable[, "t value"]), lower.tail = FALSE) * 2
+(ctable <- cbind(ctable, "p value" = p))
+(ci <- confint(TimeStepPC_OLR))
+
+```
+
+Perfom a logistic regression: PCs ~ sp
+
+```{r}
+SP_PC_LogReg <- glm(factor(sp) ~ PC1, data = All_PCs, family = "binomial")
+
+```
+
+plots
+```{r}
+
+library("ggplot2")
+pdf("PC3_time.pdf")
+ggplot(All_PCs, aes(x = time, y = PC3, fill=time)) + 
+geom_boxplot() + geom_jitter()+ scale_fill_manual(values=c('#f7fcb9','#41ab5d','#005a32'))+
+theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank()) 
+dev.off()
+
+pdf("PC3_timeRank.pdf")
+ggplot(All_PCs, aes(x = timeRank, y = PC3, color=sp))+
+geom_text(aes(label=timeRank),size=10) + scale_color_manual(values=c('#66c2a5','#fc8d62','#8da0cb','#e78ac3','#a6d854'))+ 
+   geom_label()+
+theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank()) 
+dev.off()
+
+pdf("PC1_PC2.pdf")
+ggplot(All_PCs, aes(x = PC1, y = PC2, color=sp)) + 
+geom_text(aes(label=timeRank),size=10) + scale_color_manual(values=c('#66c2a5','#fc8d62','#8da0cb','#e78ac3','#a6d854'))+ 
+theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank()) 
+dev.off()
+
+pdf("PC3_PC4.pdf")
+ggplot(All_PCs, aes(x = PC3, y = PC4, color=sp)) + 
+geom_text(aes(label=timeRank), size=10) + 
+scale_color_manual(values=c('#66c2a5','#fc8d62','#8da0cb','#e78ac3','#a6d854'))+
+theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank()) 
+dev.off()
+
+pdf("PC2_PC4.pdf")
+ggplot(All_PCs, aes(x = PC2, y = PC4, color=sp)) + 
+geom_text(aes(label=timeRank), size=10) + scale_color_manual(values=c('#66c2a5','#fc8d62','#8da0cb','#e78ac3','#a6d854'))+
+theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank()) 
+dev.off()
+
+pdf("PC1_PC4.pdf")
+ggplot(All_PCs, aes(x = PC1, y = PC4, color=sp)) + geom_text(aes(label=timeRank), size=10)+
+scale_color_manual(values=c('#66c2a5','#fc8d62','#8da0cb','#e78ac3','#a6d854'))+
+theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank()) 
+dev.off()
+
+pdf("PC2_PC3.pdf")
+ggplot(All_PCs, aes(x = PC2, y = PC3, color=sp)) + 
+geom_text(aes(label=timeRank), size=10) + scale_color_manual(values=c('#66c2a5','#fc8d62','#8da0cb','#e78ac3','#a6d854')) +
+theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank()) 
+dev.off()
+
+pdf("PC1_PC3.pdf")
+ggplot(All_PCs, aes(x = PC1, y = PC3, color=sp)) + 
+geom_text(aes(label=timeRank),size=10) + scale_color_manual(values=c('#66c2a5','#fc8d62','#8da0cb','#e78ac3','#a6d854')) +
+theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank()) 
+dev.off()
+
+```
+
+Select the 5% highest and 5% lowest loading OGGs for PC3 -- I just selected X from the top and X from the bottom. Then get expression data for those genes. 
+```{r}
+All_PCloadings<-data.frame(All_PCloadings)
+PC3_mostDiff<-All_PCloadings[order(All_PCloadings[,3]),]
+PC3_mostDiff<-PC3_mostDiff[c(1:50, 2479:2529),]
+PC3_mostDiff_OGGs<-row.names(PC3_mostDiff)
+
+
+Dan_PC3_mostDiff_exp<-Dan.shared.OGG.exp[,colnames(Dan.shared.OGG.exp)%in%PC3_mostDiff_OGGs] 
+Gal_PC3_mostDiff_exp<-Gal.shared.OGG.exp[,colnames(Gal.shared.OGG.exp)%in%PC3_mostDiff_OGGs]
+Mus_PC3_mostDiff_exp<-Mus.shared.OGG.exp[,colnames(Mus.shared.OGG.exp)%in%PC3_mostDiff_OGGs]
+Xlaev_PC3_mostDiff_exp<-Xlaev.shared.OGG.exp[,colnames(Xlaev.shared.OGG.exp)%in%PC3_mostDiff_OGGs]
+Xtrop_PC3_mostDiff_exp<-Xtrop.shared.OGG.exp[,colnames(Xtrop.shared.OGG.exp)%in%PC3_mostDiff_OGGs]
+```
+Apply the pairwise cor, time steps, and IK time steps and Anova  functions from AllPWcor.Rmd 
+```{r}
+Dan_Gal_PC3.cor<-PWstageCor(Dan_PC3_mostDiff_exp, Gal_PC3_mostDiff_exp)
+Dan_Mus_PC3.cor<-PWstageCor(Dan_PC3_mostDiff_exp, Mus_PC3_mostDiff_exp)
+Dan_X.laev_PC3.cor<-PWstageCor(Dan_PC3_mostDiff_exp, Xlaev_PC3_mostDiff_exp)
+Dan_X.trop_PC3.cor<-PWstageCor(Dan_PC3_mostDiff_exp, Xtrop_PC3_mostDiff_exp)
+
+Gal_Mus_PC3.cor<-PWstageCor(Gal_PC3_mostDiff_exp, Mus_PC3_mostDiff_exp)
+Gal_X.laev_PC3.cor<-PWstageCor(Gal_PC3_mostDiff_exp, Xlaev_PC3_mostDiff_exp)
+Gal_X.trop_PC3.cor<-PWstageCor(Gal_PC3_mostDiff_exp, Xtrop_PC3_mostDiff_exp)
+
+X.laev_Mus_PC3.cor<-PWstageCor(Xlaev_PC3_mostDiff_exp,Mus_PC3_mostDiff_exp)
+X.trop_Mus_PC3.cor<-PWstageCor(Xtrop_PC3_mostDiff_exp,Mus_PC3_mostDiff_exp)
+
+X.laev_trop_PC3.cor<-PWstageCor(Xlaev_PC3_mostDiff_exp,Xtrop_PC3_mostDiff_exp)
+
+###
+Dan_Gal_PC3.TimeCor<-TimeStep15_PWcorMatix(Dan_Gal_PC3.cor,6,5)
+Dan_Mus_PC3.TimeCor<-TimeStep19_PWcorMatix(Dan_Mus_PC3.cor,6,4)
+Dan_Xlaev_PC3.TimeCor<-TimeStep15_PWcorMatix(Dan_X.laev_PC3.cor,6,4)
+Dan_Xtrop_PC3.TimeCor<-TimeStep15_PWcorMatix(Dan_X.trop_PC3.cor,6,4)
+
+Gal_Mus_PC3.TimeCor<-TimeStep19_PWcorMatix(Gal_Mus.cor,5,4)
+Gal_Xlaev_PC3.TimeCor<-TimeStep15_PWcorMatix(Gal_X.laev_PC3.cor,5,4)
+Gal_Xtrop_PC3.TimeCor<-TimeStep15_PWcorMatix(Gal_X.trop_PC3.cor,5,4)
+
+Xlaev_Mus_PC3.TimeCor<-TimeStep19_PWcorMatix(X.laev_Mus_PC3.cor,4,4)
+Xtrop_Mus_PC3.TimeCor<-TimeStep19_PWcorMatix(X.trop_Mus_PC3.cor,4,4)
+
+Xlaev_Xtrop_PC3.TimeCor<-TimeStep15_PWcorMatix(X.laev_trop_PC3.cor,4,4)
+
+All.TimeCor_PC3_Xtrop<-rbind(Dan_Gal_PC3.TimeCor, Dan_Mus_PC3.TimeCor,Dan_Xlaev_PC3.TimeCor, Dan_Xtrop_PC3.TimeCor,Gal_Mus_PC3.TimeCor,Gal_Xlaev_PC3.TimeCor,Gal_Xtrop_PC3.TimeCor,Xlaev_Mus_PC3.TimeCor,Xtrop_Mus_PC3.TimeCor, Xlaev_Xtrop_PC3.TimeCor)
+
+##
+library("plyr")
+Dan_Gal_PC3.TimeCor_means<-ddply(Dan_Gal_PC3.TimeCor,~time,summarise,cor=mean(cor))
+Dan_Mus_PC3.TimeCor_means<-ddply(Dan_Mus_PC3.TimeCor,~time,summarise,cor=mean(cor))
+Dan_Xlaev_PC3.TimeCor_means<-ddply(Dan_Xlaev_PC3.TimeCor,~time,summarise,cor=mean(cor))
+Dan_Xtrop_PC3.TimeCor_means<-ddply(Dan_Xtrop_PC3.TimeCor,~time,summarise,cor=mean(cor))
+
+Gal_Mus_PC3.TimeCor_means<-ddply(Gal_Mus_PC3.TimeCor,~time,summarise,cor=mean(cor))
+Gal_Xlaev_PC3.TimeCor_means<-ddply(Gal_Xlaev_PC3.TimeCor,~time,summarise,cor=mean(cor))
+Gal_Xtrop_PC3.TimeCor_means<-ddply(Gal_Xtrop_PC3.TimeCor,~time,summarise,cor=mean(cor))
+
+Xlaev_Mus_PC3.TimeCor_means<-ddply(Xlaev_Mus_PC3.TimeCor,~time,summarise,cor=mean(cor))
+Xtrop_Mus_PC3.TimeCor_means<-ddply(Xtrop_Mus_PC3.TimeCor,~time,summarise,cor=mean(cor))
+
+Xlaev_Xtrop_PC3.TimeCor_means<-ddply(Xlaev_Xtrop_PC3.TimeCor,~time,summarise,cor=mean(cor))
+
+All.TimeCor_PC3_means<-rbind(Dan_Gal_PC3.TimeCor_means, Dan_Mus_PC3.TimeCor_means,Dan_Xlaev_PC3.TimeCor_means, Dan_Xtrop_PC3.TimeCor_means,Gal_Mus_PC3.TimeCor_means,Gal_Xlaev_PC3.TimeCor_means,Gal_Xtrop_PC3.TimeCor_means,Xlaev_Mus_PC3.TimeCor_means,Xtrop_Mus_PC3.TimeCor_means, Xlaev_Xtrop_PC3.TimeCor_means)
+
+All.TimeCor_PC3_AOV<-aov(cor~time, data=All.TimeCor_PC3_Xtrop)
+summary(All.TimeCor_PC3_AOV)
+TukeyHSD(All.TimeCor_PC3_AOV)
+
+#plot
+pdf("PC3OGGs_timeCor.pdf")
+ggplot(All.TimeCor_PC3_Xtrop, aes(x = time, y = cor, fill=time)) + 
+geom_boxplot() + scale_fill_manual(values=c('#f7fcb9','#41ab5d','#005a32'))+ geom_jitter()+
+theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank()) 
+dev.off()
+
+```
+Recreate Irie and Kuratani with PC3 data
+```{r}
+cor<-c((Dan_Gal_PC3.cor[12,15]), (Dan_Mus_PC3.cor[12,15]), (Dan_X.laev_PC3.cor[12,15]), (Dan_X.trop_PC3.cor[12,15]), (Gal_Mus_PC3.cor[15,19]), (Gal_X.laev_PC3.cor[15,15]), (Gal_X.trop_PC3.cor[15,15]), (X.laev_Mus_PC3.cor[15,19]), (X.laev_trop_PC3.cor[15,15]), (X.trop_Mus_PC3.cor[15,19]))
+time<-rep(c('latest'), c(length(cor)))
+ 
+latest_PC3<-data.frame(time,cor)
+
+cor<-c((Dan_Gal_PC3.cor[8,8]), (Dan_Mus_PC3.cor[8,7]),  (Dan_X.laev_PC3.cor[8,10]), (Dan_X.trop_PC3.cor[8,10]), (Gal_Mus_PC3.cor[8,7]), (Gal_X.laev_PC3.cor[8,10]), (Gal_X.trop_PC3.cor[8,10]), (X.laev_Mus_PC3.cor[10,7]), (X.laev_trop_PC3.cor[10,10]), (X.trop_Mus_PC3.cor[10,7]))
+time<-rep(c('pharyngula'), c(length(cor)))
+ 
+pharyngula_PC3<-data.frame(time,cor)
+ 
+cor<-c((Dan_Gal_PC3.cor[2,1]), (Dan_Mus_PC3.cor[2,4]),  (Dan_X.laev_PC3.cor[2,3]), (Dan_X.trop_PC3.cor[2,3]), (Gal_Mus_PC3.cor[1,4]), (Gal_X.laev_PC3.cor[1,3]), (Gal_X.trop_PC3.cor[1,3]), (X.laev_Mus_PC3.cor[3,4]), (X.laev_trop_PC3.cor[3,3]), (X.trop_Mus_PC3.cor[3,4]))
+time<-rep(c('blastula_shield'), c(length(cor)))
+ 
+blastula_shield_PC3<-data.frame(time,cor)
+ 
+cor<-c((Dan_Mus_PC3.cor[1,2]), (Dan_X.laev_PC3.cor[1,1]), (Dan_X.trop_PC3.cor[1,1]), (X.laev_Mus_PC3.cor[1,2]), (X.laev_trop_PC3.cor[1,1]), (X.trop_Mus_PC3.cor[1,2]))
+time<-rep(c('cleavage'), c(length(cor)))
+ 
+cleavage_PC3<-data.frame(time,cor)
+
+IK_timesteps_PC3<-rbind(latest_PC3, pharyngula_PC3, blastula_shield_PC3, cleavage_PC3)
+IK_timesteps_PC3_AOV<-aov(cor~time, data=IK_timesteps)
+summary(IK_timesteps_PC3_AOV)
+TukeyHSD(IK_timesteps_PC3_AOV)
+
+#plot
+ggplot(IK_timesteps_PC3, aes(x = time, y = cor, fill=time)) + 
+geom_boxplot() + geom_jitter()+ scale_fill_manual(values=c('#f7fcb9','#addd8e','#41ab5d','#005a32'))+ 
+  theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank()) 
+```
+Do PCA for each species independently. Function x = matrix of OGGs by stages, y = total number of stages for ranking.
+
+```{r}
+All.shared.OGG.exp<-do.call("rbind", list(Dan.shared.OGG.exp, Gal.shared.OGG.exp, Mus.shared.OGG.exp, Xlaev.shared.OGG.exp, Xtrop.shared.OGG.exp))
+  
+PCA_timeRanks<-function(x,y){
+    x_PCs<-x$x
+  t<-as.data.frame(c(1:y))
+  colnames(t)<-"timeRank"
+  timeRank_PCs<-x_PCs<-cbind(t, x_PCs)
+   return(timeRank_PCs)
+    }
+
+Dan_PCA<-prcomp(Dan.shared.OGG.exp)
+summary(Dan_PCA) #percent variance
+Dan_PCs<-PCA_timeRanks(Dan_PCA,15) #timeStep
+summary(Dan_PCs)
+Dan_PCloadings<-Dan_PCA$rotation
+
+
+
+
+

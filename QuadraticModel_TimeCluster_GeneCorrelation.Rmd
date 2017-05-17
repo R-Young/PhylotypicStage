@@ -1,0 +1,501 @@
+---
+title: "QuadraticModel_TimeCluster_GeneCorrelation"
+author: "Becca"
+date: "March 30, 2017"
+output: html_document
+---
+This markdown does analyses associated with testing whether hourglass(quadratic function) in the pairwise species rank correlations through embryogeneis. The scripts establish how to test for the quadratic in the real data (all species and without each frog, one at time) and then provides scripts to testing real vs. randomized data. 
+## R Markdown
+
+Looking for an hourglass in the real data
+```{r}
+library("reshape2")
+x=melt(AllClustCor5)
+lm.out=lm(value ~ as.numeric(x$variable) + I(as.numeric(x$variable)^2), data=x)
+x=summary(lm.out)
+lm_AllClustCor5=data.frame(x$coefficients)
+
+y=melt(AllClustCor5_Nolaevis)
+lm.out=lm(value ~ as.numeric(y$variable) + I(as.numeric(y$variable)^2), data=y)
+y=summary(lm.out)
+lm_AllClustCor5_Nolaev=data.frame(y$coefficients)
+
+z=melt(AllClustCor5_Notrop)
+lm.out=lm(value ~ as.numeric(z$variable) + I(as.numeric(z$variable)^2), data=z)
+z=summary(lm.out)
+lm_AllClustCor5_Notrop=data.frame(z$coefficients)
+
+
+################
+x=melt(AllClustCor4)
+lm.out=lm(value ~ as.numeric(x$variable) + I(as.numeric(x$variable)^2), data=x)
+x=summary(lm.out)
+lm_AllClustCor4=data.frame(x$coefficients)
+
+y=melt(AllClustCor4_Nolaevis)
+lm.out=lm(value ~ as.numeric(y$variable) + I(as.numeric(y$variable)^2), data=y)
+y=summary(lm.out)
+lm_AllClustCor4_Nolaev=data.frame(y$coefficients)
+
+z=melt(AllClustCor4_Notrop)
+lm.out=lm(value ~ as.numeric(z$variable) + I(as.numeric(z$variable)^2), data=z)
+z=summary(lm.out)
+lm_AllClustCor4_Notrop=data.frame(z$coefficients)
+
+```
+
+this function takes individual species expression and cluster ID files and randomizes cluster across columns or gene within stage (gene expression data- e.g. Mus.shared.OGG.exp[-c(2:4),], cluster id- the now randomized t here, and k).
+SpeciesClustmeanWI is from MeanBYCluster_OGG.Rmd.
+```{r, randomize cluster in each species}
+library("dplyr")
+library("plyr")
+library("reshape2")
+
+#randomize stage association with cluster
+randomBYtimeCluster<-function(sp, clusterID, k) {
+    clusterID[,k] <- clusterID[sample(1:nrow(clusterID),size=nrow(clusterID)), k] 
+    xk<-SpeciesClustmeanWI(sp, clusterID,k)
+    return(xk)
+}
+
+sp=Mus.shared.OGG.exp[-c(2:4),]
+clusterID=Mus_clusterID
+k=5
+
+#randomize gene expression within each stage before taking a cluster mean
+randomBYgeneCluster<-function(sp, clusterID, k) {
+  #the below is not working???  
+  OGG <- apply(sp, 1, function(sp) {sample(1:ncol(sp), size=ncol(sp))}) 
+    xk<-SpeciesClustmeanWI(OGG, clusterID,k)
+    return(xk)
+}
+
+#This takes function takes the diagonal rank correlation of same clusters
+diagPWstageCor<-function(x,y) {
+  x<-t(x)
+  y<-t(y)
+  z<-cor(x,y,use="pairwise.complete.obs", method="spearman")
+  z<-diag(z)
+  return(z)
+  }
+```
+
+
+```{r}
+#for now we just use two species for testing the approach
+#make lists of OGG expression data at all included time point and the cluster associations for the timepoints in each species
+
+#expr_list<-list(Mus.shared.OGG.exp[-c(2:4),],
+#                Gal.shared.OGG.exp, 
+#                Xlaev.shared.OGG.exp,
+#                Xtrop.shared.OGG.exp,
+#                Dan.shared.OGG.exp[-c(1, 12:15),])
+
+#ID_list<-list(Mus_clusterID, 
+#              Gallus_clusterID,
+#              Xlaev_clusterID, 
+#              Xtrop_clusterID, 
+#             Danio_clusterID)
+
+#set_names<-c("Mus", "Gallus", "Xlaevis", "Xtropicalis", "Danio")
+#k=5
+
+QuadraticDist_RandomRankCor<-function(expr_list, ID_list, set_names, k){
+#apply the randomixation of timessteps + mean expression WI cluster across a list of dfs-- output is in columns.
+  random<-mapply(randomBYtimeCluster, 
+             sp=expr_list, 
+             clusterID=ID_list, 
+             k=k)
+#set names of the output list of dfs (for sanity)
+  colnames(random)<-set_names
+#Make each column a df
+  random<-apply(random,
+                2,
+                function(a) {data.frame(a)})
+
+
+#set number for rep to generate the lists for PWStageCor  
+  NumSamples<-length(expr_list)
+  NumSamples_vector<-c(1:NumSamples-1)
+  
+  Pairs_set_A<-rep(random, rev(NumSamples_vector))
+  
+  Pairs_set_B = list(0)
+    for (n in 2:length(random)) {
+     Pairs_set_B = c(Pairs_set_B, 
+                    random[n:length(random)])
+    }
+  #the first set in the list is empty need to delete it.
+  Pairs_set_B<-Pairs_set_B[-1]
+        
+#initialize a vector for the loop
+  cluster.names<-c()
+  for (i in 1:k) {
+  cluster.names[i]<-paste("cluster",
+                          i,
+                          sep="")} 
+  
+  PW_SP.names<-combn(set_names, 2)
+  PW_SP.names<-as.character(apply(PW_SP.names, 2, function(t) paste(t[1], t[2], sep=""))) 
+#PWStageCor comes from ....in AllPWcor.Rmd
+  c<-mapply(diagPWstageCor, x=Pairs_set_A, y=Pairs_set_B)
+  row.names(c)<-cluster.names
+  colnames(c)<-PW_SP.names
+  
+  c<-t(c)
+  clusCor=melt(c)
+  colnames(clusCor)<-c("SPpair", "cluster", "correlation")
+  lm.out=lm(correlation ~ as.numeric(clusCor$cluster) + I(as.numeric(clusCor$cluster)^2),
+            data=clusCor)
+  lm.summary=summary(lm.out)
+  lm.coefficients=data.frame(lm.summary$coefficients)
+  tstat_quadratic<-lm.coefficients[3,c(3:4)]
+  return(tstat_quadratic)
+}
+
+```
+
+```{r, applying the randomizaton + quadratic function}
+
+x<-list(Mus.shared.OGG.exp[-c(2:4),],
+                Gal.shared.OGG.exp, 
+                Xlaev.shared.OGG.exp,
+                Xtrop.shared.OGG.exp,
+                Dan.shared.OGG.exp[-c(1, 12:15),])
+
+y<-list(Mus_clusterID, 
+              Gallus_clusterID,
+              Xlaev_clusterID, 
+              Xtrop_clusterID, 
+              Danio_clusterID)
+
+z<-c("Mus", 
+     "Gallus", 
+     "Xlaevis", 
+     "Xtropicalis", 
+     "Danio")
+k=5
+
+random_quad1000_ALL<-do.call( rbind, 
+                         replicate(1000, 
+                                   QuadraticDist_RandomRankCor(x,
+                                                               y,
+                                                               z,
+                                                               k), 
+                                   simplify=FALSE ))
+
+colnames(random_quad1000_ALL)<-c("ALL_t.statistic", 
+                                 "ALL_p.value")
+
+#No Xenopus laevis
+
+x<-list(Mus.shared.OGG.exp[-c(2:4),],
+                Gal.shared.OGG.exp, 
+                Xtrop.shared.OGG.exp,
+                Dan.shared.OGG.exp[-c(1, 12:15),])
+
+y<-list(Mus_clusterID, 
+              Gallus_clusterID, 
+              Xtrop_clusterID, 
+              Danio_clusterID)
+
+z<-c("Mus", 
+     "Gallus", 
+     "Xtropicalis", 
+     "Danio")
+k=5
+
+random_quad1000_Nolaevis<-do.call( rbind, 
+                         replicate(1000, 
+                                   QuadraticDist_RandomRankCor(x,
+                                                               y,
+                                                               z,
+                                                               k), 
+                                   simplify=FALSE ))
+colnames(random_quad1000_Nolaevis)<-c("Nolaev_t.statistic", 
+                                      "Nolaev_p.value")
+
+#No Xenopus tropicalis
+x<-list(Mus.shared.OGG.exp[-c(2:4),],
+                Gal.shared.OGG.exp, 
+                Xlaev.shared.OGG.exp,
+                Dan.shared.OGG.exp[-c(1, 12:15),])
+
+y<-list(Mus_clusterID, 
+              Gallus_clusterID,
+              Xlaev_clusterID,
+              Danio_clusterID)
+
+z<-c("Mus", 
+     "Gallus", 
+     "Xlaevis", 
+     "Danio")
+k=5
+
+random_quad1000_Notrop<-do.call( rbind, 
+                         replicate(1000, 
+                                   QuadraticDist_RandomRankCor(x,
+                                                               y,
+                                                               z,
+                                                               k), 
+                                   simplify=FALSE ))
+colnames(random_quad1000_Notrop)<-c("Notrop_t.statistic", 
+                                    "Notrop_p.value")
+```
+
+```{r, violin plot of random vs real data}
+#pvalue
+x<-cbind.data.frame((random_quad1000_Nolaevis[,-1]),
+                    (random_quad1000_Notrop[,-1]))
+colnames(x)<-c("NoX.laev", "NoX.trop")
+x<-melt(x)
+
+y<-cbind.data.frame((lm_AllClustCor5_Nolaev[3,4]),
+                    (lm_AllClustCor5_Notrop[3,4]))
+colnames(y)<-c("NoX.laev", "NoX.trop")
+y<-melt(y)
+
+pdf("K5_PvaluePerm.pdf", useDingbats = FALSE)
+ggplot() +
+  geom_violin(data=x, aes(x=variable, y=value))+
+  geom_point(data=y, aes(x=variable, y=value))
+dev.off()
+
+sum(random_quad1000_Nolaevis[,-1]<lm_AllClustCor5_Nolaev[3,4])/1000
+sum(random_quad1000_Notrop[,-1]<lm_AllClustCor5_Notrop[3,4])/1000
+sum(random_quad1000_ALL[,-1]<lm_AllClustCor5[3,4])/1000
+
+
+
+#tstat
+x<-cbind.data.frame(random_quad1000_ALL[,-2],
+                    random_quad1000_Nolaevis[,-2],
+                    random_quad1000_Notrop[,-2])
+colnames(x)<-c("ALL", "NoX.laev", "NoX.trop")
+x<-melt(x)
+
+y<-cbind.data.frame(lm_AllClustCor5[3,3],
+                    lm_AllClustCor5_Nolaev[3,3],
+                    lm_AllClustCor5_Notrop[3,3])
+colnames(y)<-c("ALL", "NoX.laev", "NoX.trop")
+y<-melt(y)
+
+
+ggplot() +
+  geom_violin(data=x, aes(x=variable, y=value))+
+  geom_point(data=y, aes(x=variable, y=value))
+```
+
+```{r, permutation of cluster randomization and PW cor, doesn't include the quadratic funtion}
+RandomRankCor<-function(expr_list, ID_list, set_names, k){
+#apply the randomixation of timessteps + mean expression WI cluster across a list of dfs-- output is in columns.
+  random<-mapply(randomBYtimeCluster, 
+             sp=expr_list, 
+             clusterID=ID_list, 
+             k=k)
+#set names of the output list of dfs (for sanity)
+  colnames(random)<-set_names
+#Make each column a df
+  random<-apply(random,
+                2,
+                function(a) {data.frame(a)})
+
+
+#set number for rep to generate the lists for PWStageCor  
+  NumSamples<-length(expr_list)
+  NumSamples_vector<-c(1:NumSamples-1)
+  
+  Pairs_set_A<-rep(random, rev(NumSamples_vector))
+  
+  Pairs_set_B = list(0)
+    for (n in 2:length(random)) {
+     Pairs_set_B = c(Pairs_set_B, 
+                    random[n:length(random)])
+    }
+  #the first set in the list is empty need to delete it.
+  Pairs_set_B<-Pairs_set_B[-1]
+        
+#initialize a vector for the loop
+  cluster.names<-c()
+  for (i in 1:k) {
+  cluster.names[i]<-paste("cluster",
+                          i,
+                          sep="")} 
+  
+  PW_SP.names<-combn(set_names, 2)
+  PW_SP.names<-as.character(apply(PW_SP.names, 2, function(t) paste(t[1], t[2], sep=""))) 
+#PWStageCor comes from ....in AllPWcor.Rmd
+  c<-mapply(diagPWstageCor, x=Pairs_set_A, y=Pairs_set_B)
+  row.names(c)<-cluster.names
+  colnames(c)<-PW_SP.names
+    return(c)
+}
+```
+
+```{r applying the randomizaton function}
+
+x<-list(Mus.shared.OGG.exp[-c(2:4),],
+                Gal.shared.OGG.exp, 
+                Xlaev.shared.OGG.exp,
+                Xtrop.shared.OGG.exp,
+                Dan.shared.OGG.exp[-c(1, 12:15),])
+
+y<-list(Mus_clusterID, 
+              Gallus_clusterID,
+              Xlaev_clusterID, 
+              Xtrop_clusterID, 
+              Danio_clusterID)
+
+z<-c("Mus", 
+     "Gallus", 
+     "Xlaevis", 
+     "Xtropicalis", 
+     "Danio")
+k=5
+
+random_cor1000_ALL<-do.call( rbind, 
+                         replicate(1000, 
+                                   RandomRankCor(x,
+                                                               y,
+                                                               z,
+                                                               k), 
+                                   simplify=FALSE ))
+
+
+#No Xenopus laevis
+
+x<-list(Mus.shared.OGG.exp[-c(2:4),],
+                Gal.shared.OGG.exp, 
+                Xtrop.shared.OGG.exp,
+                Dan.shared.OGG.exp[-c(1, 12:15),])
+
+y<-list(Mus_clusterID, 
+              Gallus_clusterID, 
+              Xtrop_clusterID, 
+              Danio_clusterID)
+
+z<-c("Mus", 
+     "Gallus", 
+     "Xtropicalis", 
+     "Danio")
+k=5
+
+random_cor1000_Nolaevis<-do.call( rbind, 
+                         replicate(1000, 
+                                   RandomRankCor(x,
+                                                               y,
+                                                               z,
+                                                               k), 
+                                   simplify=FALSE ))
+
+
+#No Xenopus tropicalis
+x<-list(Mus.shared.OGG.exp[-c(2:4),],
+                Gal.shared.OGG.exp, 
+                Xlaev.shared.OGG.exp,
+                Dan.shared.OGG.exp[-c(1, 12:15),])
+
+y<-list(Mus_clusterID, 
+              Gallus_clusterID,
+              Xlaev_clusterID,
+              Danio_clusterID)
+
+z<-c("Mus", 
+     "Gallus", 
+     "Xlaevis", 
+     "Danio")
+k=5
+
+random_cor1000_Notrop<-do.call( rbind, 
+                         replicate(1000, 
+                                   RandomRankCor(x,
+                                                               y,
+                                                               z,
+                                                               k), 
+                                   simplify=FALSE ))
+
+
+```
+
+Get mean of each cluster for each iteration of the correlations above
+
+```{r}
+random_cor1000_ALL <- read.csv("Z:/All_projects/Phylotypic Stage/R/PhylotypicStage/POD_R/random_cor1000_ALL.csv")
+random_cor1000_ALL_means<-cbind.data.frame(random_cor1000_ALL[,1],
+                                           rowMeans(random_cor1000_ALL[,-1]))
+random_cor1000_ALL_means<-cbind.data.frame(rep(1:1000, each=5),
+                                           random_cor1000_ALL_means)
+colnames(random_cor1000_ALL_means)<-c("iteration", 
+                                      "cluster", 
+                                      "iterationMean")
+
+#is the real data more peaked?
+#first filter pulls out the middle cluster
+Peakedness_random_cor1000_ALL<-cbind.data.frame(filter(random_cor1000_ALL_means, 
+                                                       cluster %in% c("cluster2",
+                                                                      "cluster3")) %>%
+                                                group_by(iteration) %>% 
+                                                dplyr::summarise(uppermean = mean(iterationMean)),
+                                                #second, filter, group and mean other non-peak clusters
+                                                filter(random_cor1000_ALL_means,
+                                                       cluster %in% c("cluster1",
+                                                                      "cluster4",
+                                                                      "cluster5")) %>% 
+                                                  group_by(iteration) %>% 
+                                                  dplyr::summarise(lowermean = mean(iterationMean)))%>%
+  mutate(peak = uppermean - lowermean)
+
+random_cor1000_Nolaevis <- read.csv("Z:/All_projects/Phylotypic Stage/R/PhylotypicStage/POD_R/random_cor1000_Nolaevis.csv")
+random_cor1000_Nolaevis_means<-cbind.data.frame(random_cor1000_Nolaevis[,1],
+                                           rowMeans(random_cor1000_Nolaevis[,-1]))
+random_cor1000_Nolaevis_means<-cbind.data.frame(rep(1:1000, each=5),
+                                                random_cor1000_Nolaevis_means)
+colnames(random_cor1000_Nolaevis_means)<-c("iteration", 
+                                      "cluster", 
+                                      "iterationMean")
+
+Peakedness_random_cor1000_Nolaevis_means<-cbind.data.frame(filter(random_cor1000_Nolaevis_means, 
+                                                       cluster %in% c("cluster2",
+                                                                      "cluster3")) %>%
+                                                group_by(iteration) %>% 
+                                                dplyr::summarise(uppermean = mean(iterationMean)),
+                                                #second, filter, group and mean other non-peak clusters
+                                                filter(random_cor1000_Nolaevis_means,
+                                                       cluster %in% c("cluster1",
+                                                                      "cluster4",
+                                                                      "cluster5")) %>% 
+                                                  group_by(iteration) %>% 
+                                                  dplyr::summarise(lowermean = mean(iterationMean)))%>%
+  mutate(peak = uppermean - lowermean)
+
+random_cor1000_Notrop <- read.csv("Z:/All_projects/Phylotypic Stage/R/PhylotypicStage/POD_R/random_cor1000_Notrop.csv")
+random_cor1000_Notrop_means<-cbind.data.frame(random_cor1000_Notrop[,1],
+                                           rowMeans(random_cor1000_Notrop[,-1]))
+random_cor1000_Notrop_means<-cbind.data.frame(rep(1:1000, each=5),
+                                                random_cor1000_Notrop_means)
+colnames(random_cor1000_Notrop_means)<-c("iteration", 
+                                      "cluster", 
+                                      "iterationMean")
+
+Peakedness_random_cor1000_Notrop_means<-cbind.data.frame(filter(random_cor1000_Notrop_means, 
+                                                       cluster %in% c("cluster2",
+                                                                      "cluster3")) %>%
+                                                group_by(iteration) %>% 
+                                                dplyr::summarise(uppermean = mean(iterationMean)),
+                                                #second, filter, group and mean other non-peak clusters
+                                                filter(random_cor1000_Notrop_means,
+                                                       cluster %in% c("cluster1",
+                                                                      "cluster4",
+                                                                      "cluster5")) %>% 
+                                                  group_by(iteration) %>% 
+                                                  dplyr::summarise(lowermean = mean(iterationMean)))%>%
+  mutate(peak = uppermean - lowermean)
+
+
+pdf("K5_Peakedness.pdf", useDingbats = FALSE)
+ggplot() +
+  geom_violin(data=x, aes(x=variable, y=value))+
+  geom_point(data=y, aes(x=variable, y=value))
+dev.off()
+```
+

@@ -1,0 +1,70 @@
+---
+title: "normalized by species array"
+author: "Becca"
+date: "March 21, 2017"
+output: html_document
+---
+
+## R Markdown
+
+This normalization seems wrong minded as it generates bizarre nonsensical results
+
+
+This is an R Markdown document contains functions to normalize microarray expression across arrays. Transcript abundance and binding affinity may differ across speces and arrays. This hope is that this will minimize these effects. For the stages including in the analysis only. Take a mean of each gene and and normalize by subtracitng the mean from each value
+
+```{r}
+expr_data=xlaev.all.stages
+normalizeBYsp<-function(expr_data) {
+  x=array(expr_data)
+  y=t(data.frame(colMeans(x)))
+  x=apply(x, 1, function(x) x-y)
+  x=t(x)
+  colnames(x)<-colnames(expr_data)
+  return(x)
+}
+
+```
+
+Implement for each species for the stages that will be included in developmental hourglass hypothesis
+
+```{r pressure, echo=FALSE}
+drer.interspecificNORM<-normalizeBYsp(drer.all.stages[-c(1,12:15),])
+mmus.interspecificNORM<-normalizeBYsp(mmus.all.stages.3[-c(2:4),])
+ggal.interspecificNORM<-normalizeBYsp(ggal.all.stages)
+xlaev.interspecificNORM<-normalizeBYsp(xlaev.all.stages)
+xtrop.interspecificNORM<-normalizeBYsp(xtrop.all.stages)
+```
+
+Recalculate average for all OGGs after normalization. avgParalogousGenes() function was written by Pravav and can be found here: 
+\Shared\Undergraduate_Students\Pranav_Bhamidipati\Rscripts
+
+```{r}
+Dan.interspecificNORM.avgOGG<-avgParalogousGenes(drer.interspecificNORM,
+                                                 Dan.OGG)
+Gal.interspecificNORM.avgOGG<-avgParalogousGenes(ggal.interspecificNORM,
+                                                 Gal.OGG)
+Mus.interspecificNORM.avgOGG<-avgParalogousGenes(mmus.interspecificNORM,
+                                                 Mus.OGG)
+Xlaev.interspecificNORM.avgOGG<-avgParalogousGenes(xlaev.interspecificNORM, 
+                                                   xlaev.OGG)
+Xtrop.interspecificNORM.avgOGG<-avgParalogousGenes(xtrop.interspecificNORM,
+                                                   xtrop.OGG)
+```
+
+Limit the above to OGGs shared by all species 
+Limit to OGGs shared by all species except X. laevis
+Limit to OGGs shared by all species except X. tropicalis
+
+```{r}
+
+
+Dan.interspecificNORM.avgOGG <- Dan.interspecificNORM.avgOGG[,colnames(Dan.interspecificNORM.avgOGG) %in% shared_OGGs]
+
+Gal.interspecificNORM.avgOGG <- Gal.interspecificNORM.avgOGG[,colnames(Gal.interspecificNORM.avgOGG) %in% shared_OGGs]
+
+Mus.interspecificNORM.avgOGG <- Mus.interspecificNORM.avgOGG[,colnames(Mus.interspecificNORM.avgOGG) %in% shared_OGGs]
+
+Xlaev.interspecificNORM.avgOGG <- Xlaev.interspecificNORM.avgOGG[,colnames(Xlaev.interspecificNORM.avgOGG) %in% shared_OGGs]
+
+Xtrop.interspecificNORM.avgOGG <- Xtrop.interspecificNORM.avgOGG[,colnames(Xtrop.interspecificNORM.avgOGG) %in% shared_OGGs]
+```

@@ -1,0 +1,276 @@
+---
+title: "HourglassPhyloComparison"
+author: "Becca"
+date: "March 9, 2017"
+output: html_document
+---
+## R Markdown
+
+Analyses associated with assessing the relationship between phylgenetic distance and embryonic distance. 
+```{r}
+library("reshape2")
+library("ggplot2")
+#phylo_distance=distance
+#row.names(phylo_distance)<-row.names(AllClustCor4)
+#rm(distance)
+#SPpair=data.frame(row.names(AllClustCor4))
+#colnames(SPpair)<-"SPpair"
+phylo_distance<-cbind.data.frame(row.names(phylo_distance), phylo_distance)
+
+
+AllClustCor4_phydist<-cbind.data.frame(SPpair,AllClustCor4)
+AllClustCor4_phydist<-melt(AllClustCor4_phydist, id="SPpair")
+x<-cbind.data.frame(rep(phylo_distance$SPpair, 4), rep(phylo_distance$distance,4))
+colnames(x)<-c("SPpair", "distance")
+AllClustCor4_phydist<-merge(AllClustCor4_phydist, x, by="SPpair")
+  
+AllClustCor5_phydist<-cbind.data.frame(SPpair,AllClustCor5)
+AllClustCor5_phydist<-melt(AllClustCor5_phydist, id="SPpair")
+x<-cbind.data.frame(rep(phylo_distance$SPpair, 5), rep(phylo_distance$distance,5))
+colnames(x)<-c("SPpair", "distance")
+AllClustCor5_phydist<-merge(AllClustCor5_phydist, x, by="SPpair")
+```
+
+
+```{r, echo=FALSE}
+
+ggplot(AllClustCor4_phydist, aes(x=distance, y=value,  group=variable, colour=variable))+
+  geom_point(aes(size=0.75), shape=1)+
+  geom_smooth(method=lm, se=FALSE)+
+  scale_colour_hue(l=50)+
+    ylab("rank correlation")+
+    xlab("phylogenetic distance")+
+    theme_bw() + 
+    theme(axis.title.x=element_blank(),
+        axis.text.x=element_text(size=10,face="plain", 
+                                 color="black"),
+        axis.text.y=element_text(size=14,
+                                 face="plain"),
+        axis.title.y=element_text(size=18,
+                                  face="bold"),
+        panel.grid.major=element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border=element_rect(fill=NA, 
+                                  size=0.5,
+                                  color ="black"))
+
+
+pdf("PhyloHour_allSP.pdf", useDingbats = FALSE)
+ggplot(AllClustCor5_phydist, aes(x=distance, y=value,  group=variable, colour=variable))+
+  geom_point(aes(size=0.75), shape=1)+
+  geom_smooth(method=lm, se=FALSE)+
+  scale_colour_hue(l=50)+
+    ylab("rank correlation")+
+    xlab("phylogenetic distance")+
+    theme_bw() + 
+    theme(axis.title.x=element_blank(),
+        axis.text.x=element_text(size=10,face="plain", 
+                                 color="black"),
+        axis.text.y=element_text(size=14,
+                                 face="plain"),
+        axis.title.y=element_text(size=18,
+                                  face="bold"),
+        panel.grid.major=element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border=element_rect(fill=NA, 
+                                  size=0.5,
+                                  color ="black"))
+dev.off()
+    
+```
+
+same as above, but remove Xlaev and Xtrop
+
+```{r, remove the Xenopus}
+library("dplyr")
+  x<- AllClustCor4_phydist %>% 
+  dplyr::filter(SPpair != "XlaevXtrop")
+  
+    y<- AllClustCor5_phydist %>% 
+  dplyr::filter(SPpair != "XlaevXtrop")
+    
+pdf("PhyloHour_NOlaevtrop.pdf", useDingbats = FALSE)
+ggplot(x, aes(x=distance, y=value,  group=variable, colour=variable))+
+  geom_point(aes(size=0.75), shape=1)+
+  geom_smooth(method=lm, se=FALSE)+
+  scale_colour_hue(l=50)+
+    ylab("rank correlation")+
+    xlab("phylogenetic distance")+
+    theme_bw() + 
+    theme(axis.title.x=element_blank(),
+        axis.text.x=element_text(size=10,face="plain", 
+                                 color="black"),
+        axis.text.y=element_text(size=14,
+                                 face="plain"),
+        axis.title.y=element_text(size=18,
+                                  face="bold"),
+        panel.grid.major=element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border=element_rect(fill=NA, 
+                                  size=0.5,
+                                  color ="black"))  
+  
+  
+ggplot(y, aes(x=distance, y=value,  group=variable, colour=variable))+
+  geom_point(aes(size=0.75), shape=1)+
+  geom_smooth(method=lm, se=FALSE)+
+  scale_colour_hue(l=50)+
+    ylab("rank correlation")+
+    xlab("phylogenetic distance")+
+    theme_bw() + 
+    theme(axis.title.x=element_blank(),
+        axis.text.x=element_text(size=10,face="plain", 
+                                 color="black"),
+        axis.text.y=element_text(size=14,
+                                 face="plain"),
+        axis.title.y=element_text(size=18,
+                                  face="bold"),
+        panel.grid.major=element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border=element_rect(fill=NA, 
+                                  size=0.5,
+                                  color ="black"))
+dev.off()
+  
+
+```
+same as above but remove "XlaevXtrop" and "MusGal"
+```{r, remove Xenopus and MusGal comparisons}
+library("dplyr")
+  x<- AllClustCor4_phydist %>% 
+  dplyr::filter(SPpair != "XlaevXtrop") %>%
+  dplyr::filter(SPpair != "MusGal")
+
+  y<- AllClustCor5_phydist %>% 
+  dplyr::filter(SPpair != "XlaevXtrop") %>%
+  dplyr::filter(SPpair != "MusGal")
+ 
+  pdf("PhyloHour_NOlaevtropMusGal.pdf", useDingbats = FALSE) 
+  ggplot(x, aes(x=distance, y=value,  group=variable, colour=variable))+
+  geom_point(aes(size=0.75), shape=1)+
+  geom_smooth(method=lm, se=FALSE)+
+  scale_colour_hue(l=50)+
+    ylab("rank correlation")+
+    xlab("phylogenetic distance")+
+    theme_bw() + 
+    theme(axis.title.x=element_blank(),
+        axis.text.x=element_text(size=10,face="plain", 
+                                 color="black"),
+        axis.text.y=element_text(size=14,
+                                 face="plain"),
+        axis.title.y=element_text(size=18,
+                                  face="bold"),
+        panel.grid.major=element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border=element_rect(fill=NA, 
+                                  size=0.5,
+                                  color ="black"))
+  
+  ggplot(y, aes(x=distance, y=value,  group=variable, colour=variable))+
+  geom_point(aes(size=0.75), shape=1)+
+  geom_smooth(method=lm, se=FALSE)+
+  scale_colour_hue(l=50)+
+    ylab("rank correlation")+
+    xlab("phylogenetic distance")+
+    theme_bw() + 
+    theme(axis.title.x=element_blank(),
+        axis.text.x=element_text(size=10,face="plain", 
+                                 color="black"),
+        axis.text.y=element_text(size=14,
+                                 face="plain"),
+        axis.title.y=element_text(size=18,
+                                  face="bold"),
+        panel.grid.major=element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border=element_rect(fill=NA, 
+                                  size=0.5,
+                                  color ="black"))
+  dev.off()
+```
+phylo distance to the random data. make a scatter plot of data by cluster for each cluster. compare random (line with CI) to real (line with CI) do this for the three plots without XlaevXtrop, w/o XlaveXtrop and MusGal
+```{r, include random data}
+library("ggplot2")
+library("reshape2")
+x=K5SPvar_summary
+y=AllClustCor5_phydist
+z=phylo_distance
+
+Phylo_scatter_RankCor_RandxRealclust<-function(x,y,z){ 
+  x<-melt(x,id="SPpair")
+  x<-merge(x,z, by="SPpair")
+  df_x<-cbind.data.frame(x, 
+                         data.frame(rep("random", 
+                                        length(x$SPpair))))
+  names(df_x) <- c("SPpair",
+                   "cluster", 
+                   "correlation", 
+                   "distance", 
+                   "type")
+
+  df_y<-cbind.data.frame(y, 
+                         data.frame(rep("real", 
+                                        length(y$SPpair))))
+  names(df_y) <- c("SPpair",
+                   "cluster", 
+                   "correlation", 
+                   "distance", 
+                   "type")
+  df<-rbind.data.frame(df_x,df_y)
+  clusters<-unique(df$cluster)
+  
+  for (i in seq_along(clusters)){
+  plot=ggplot(subset(df, df$cluster==clusters[i]), 
+         aes(x=distance, 
+             y=correlation, 
+             group=type,
+             color=type))+
+    geom_point(shape = 1, lwd=5, stroke=1.5)+
+    geom_smooth(method=lm,
+              alpha=0.25,
+               aes(color = type, 
+                  group = type, 
+                    fill= type)) +
+    ylab("rank correlation")+  
+    theme_bw() + 
+    theme(axis.title.x=element_blank(),
+        axis.text.x=element_text(size=18,face="plain", 
+                                 color="black"),
+        axis.text.y=element_text(size=14,
+                                 face="plain"),
+        axis.title.y=element_text(size=18,
+                                  face="bold"),
+        panel.grid.major=element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border=element_rect(fill=NA, 
+                                  size=0.5,
+                                  color ="black"))+
+    ggtitle(paste(clusters[i], 
+                    sep=''))
+  print(plot)}
+  }
+
+pdf("Phylo-Cor_scatterBYcluster_ALL.pdf", useDingbats = FALSE)
+Phylo_scatter_RankCor_RandxRealclust(K5SPvar_summary,
+                                     AllClustCor5_phydist,
+                                     phylo_distance)
+dev.off()
+ 
+pdf("Phylo-Cor_scatterBYcluster_NOlaevtrop.pdf", useDingbats = FALSE)
+Phylo_scatter_RankCor_RandxRealclust(K5SPvar_summary %>% 
+                                       dplyr::filter(SPpair != "XlaevXtrop"),
+                                     AllClustCor5_phydist %>% 
+                                       dplyr::filter(SPpair != "XlaevXtrop"),
+                                     phylo_distance)
+dev.off()
+
+pdf("Phylo-Cor_scatterBYcluster_NOlaevtropMusGal.pdf", useDingbats = FALSE)
+Phylo_scatter_RankCor_RandxRealclust(K5SPvar_summary %>% 
+                                       dplyr::filter(SPpair != "XlaevXtrop") %>% 
+                                       dplyr::filter(SPpair != "MusGal"),
+                                     AllClustCor5_phydist %>% 
+                                       dplyr::filter(SPpair != "XlaevXtrop") %>% 
+                                       dplyr::filter(SPpair != "MusGal"),
+                                     phylo_distance)
+dev.off()  
+
+```

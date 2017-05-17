@@ -1,0 +1,131 @@
+---
+title: "EmbryoTimeSplit"
+author: "Becca"
+date: "Tuesday, June 07, 2016"
+output: html_document
+---
+
+This function is a method of identifying time steps by calculating the sum of square distances among steps. It maintains embryological order in step processing. Requires adjustment depending on the number of time points. For now I have a 15 steps and 19 steps version. 
+ Note: the sum of squared deviations from centroid is equal to the sum of pairwise squared Euclidean distances divided by the number of points
+
+```{r}
+findTimeSplit_15<-function(x) {
+  #calculate the distance matrix and then remove duplicate values that occur across diagonal of a square matrix
+  Eucdist<-data.matrix(dist(x))
+  Eucdist[upper.tri(Eucdist,diag = TRUE)]<-NA
+  
+  early=NULL
+  mid=NULL
+  late=NULL
+  all=NULL
+  special=NULL
+
+  # for each division of the time steps calculate the sum of the squared distances/the number of time steps for different groupings of time steps. It requires maintenance of the order of the steps. 
+for (n in 2:6) {
+  early[n]=(sum(((Eucdist[c(1:n), c(1:n)])^2), na.rm=TRUE))/nrow(Eucdist[c(1:n), c(1:n)])
+  mid[n]<-sum(((Eucdist[c((n+1):(15-n)), c((n+1):(15-n))])^2), na.rm=TRUE)/nrow(Eucdist[c((n+1):(15-n)), c((n+1):(15-n))])
+  late[n]<-(sum(((Eucdist[c((16-n):15), c((16-n):15)])^2), na.rm=TRUE))/nrow(Eucdist[c((16-n):15), c((16-n):15)])
+  all<-early+mid+late
+}
+
+# I realized that one step was left out of the above caluclution. I have added it manually
+special=c((sum(((Eucdist[c(1:6), c(1:6)])^2), na.rm=TRUE)/nrow(Eucdist[c(1:6), c(1:6)])),(sum(((Eucdist[c(7:8), c(7:8)])^2), na.rm=TRUE)/nrow(Eucdist[c(7:8), c(7:8)])),
+          (sum(((Eucdist[c(9:15), c(9:15)])^2), na.rm=TRUE)/nrow(Eucdist[c(9:15), c(9:15)])))
+special=as.data.frame(c(special, sum(special)))
+colnames(special)<-c("mid=7-8")
+rownames(special)<-c("early","mid","late","sumScore" )
+
+#put the data set together and return it.
+new_data<-do.call("rbind", list(early, mid, late, all))
+colnames(new_data)<-c("n=1","n=2","n=3", "n=4", "n=5", "n=6")
+rownames(new_data)<-c("early","mid","late","sumScore" )
+y<-cbind(new_data,special)
+return(y)
+
+}
+
+#see the annotations above. this version is for 19 rather than 15 time steps
+findTimeSplit_19<-function(x) {
+  Eucdist<-data.matrix(dist(x))
+  Eucdist[upper.tri(Eucdist,diag = TRUE)]<-NA
+  
+  early=NULL
+  mid=NULL
+  late=NULL
+  all=NULL
+  special=NULL
+
+for (n in 2:8) {
+  early[n]=(sum(((Eucdist[c(1:n), c(1:n)])^2), na.rm=TRUE))/nrow(Eucdist[c(1:n), c(1:n)])
+  mid[n]<-sum(((Eucdist[c((n+1):(19-n)), c((n+1):(19-n))])^2), na.rm=TRUE)/nrow(Eucdist[c((n+1):(19-n)), c((n+1):(19-n))])
+  late[n]<-(sum(((Eucdist[c((20-n):19), c((20-n):19)])^2), na.rm=TRUE))/nrow(Eucdist[c((20-n):19), c((20-n):19)])
+  all<-early+mid+late
+}
+
+special=c((sum(((Eucdist[c(1:8), c(1:8)])^2), na.rm=TRUE)/nrow(Eucdist[c(1:8), c(1:8)])),(sum(((Eucdist[c(9:10), c(9:10)])^2), na.rm=TRUE)/nrow(Eucdist[c(9:10), c(9:10)])),
+          (sum(((Eucdist[c(11:19), c(11:19)])^2), na.rm=TRUE)/nrow(Eucdist[c(11:19), c(11:19)])))
+special=as.data.frame(c(special, sum(special)))
+colnames(special)<-c("mid=9-10")
+rownames(special)<-c("early","mid","late","sumScore" )
+
+new_data<-do.call("rbind", list(early, mid, late, all))
+colnames(new_data)<-c("n=1","n=2","n=3", "n=4", "n=5", "n=6", "n=7", "n=8")
+rownames(new_data)<-c("early","mid","late","sumScore" )
+y<-cbind(new_data,special)
+return(y)
+}
+```
+
+Apply to the original gene expression data for each species. 
+
+```{r}
+Dan_TimeSplit_orig<-findTimeSplit_15(drer.all.stages)
+Dan_TimeSplit_OGG<-findTimeSplit_15(Dan.shared.OGG.exp)
+Gal_TimeSplit_orig<-findTimeSplit_15(ggal.all.stages)
+Gal_TimeSplit_OGG<-findTimeSplit_15(Gal.shared.OGG.exp)
+Mus_TimeSplit_orig<-findTimeSplit_19(mmus.all.stages.3)
+Mus_TimeSplit_OGG<-findTimeSplit_19(Mus.shared.OGG.exp)
+Xlaev_TimeSplit_orig<-findTimeSplit_15(xlaev.all.stages)
+Xlaev_TimeSplit_OGG<-findTimeSplit_15(Xlaev.shared.OGG.exp)
+Xtrop_TimeSplit_orig<-findTimeSplit_15(xtrop.all.stages)
+Xtrop_TimeSplit_OGG<-findTimeSplit_15(Xtrop.shared.OGG.exp)
+```
+
+Make ranking files of original expression data and shared OGG data to determine the split points. 
+```{r}
+#x is the OGG SS file, y is the original expression 
+RankTimeSteps<-function(x,y){
+  OGG<-rank(x[4,])
+  orig<-rank(x[4,])
+  out<-do.call("rbind", list(OGG,orig))
+  rownames(out)<-c("OGG", "original")
+  return(out)
+}
+```
+
+Apply
+```{r}
+Dan_TimeSplit_RANKS<-RankTimeSteps(Dan_TimeSplit_OGG,Dan_TimeSplit_orig)
+Gal_TimeSplit_RANKS<-RankTimeSteps(Gal_TimeSplit_OGG,Gal_TimeSplit_orig)
+Mus_TimeSplit_RANKS<-RankTimeSteps(Mus_TimeSplit_OGG,Mus_TimeSplit_orig)
+Xlaev_TimeSplit_RANKS<-RankTimeSteps(Xlaev_TimeSplit_OGG,Xlaev_TimeSplit_orig)
+Xtrop_TimeSplit_RANKS<-RankTimeSteps(Xtrop_TimeSplit_OGG,Xtrop_TimeSplit_orig)
+```
+
+
+Generate a cluster diagram to see if there is similarity to the SS rank approach
+UNDER CONSTRUCTION
+```{r}
+library("pvclust")
+TimeStep_cluster<-function(x) {
+    y<-pvclust(x, method.hclust="average", method.dist="correlation",
+             use.cor="pairwise.complete.obs", nboot=1000, store=FALSE,
+             weight=FALSE)
+}
+  
+pdf("")
+#plot cluster
+  plot(y, print.pv=TRUE, print.num=F, float=0.022)
+dev.off()
+
+```

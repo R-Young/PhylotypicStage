@@ -1,0 +1,129 @@
+---
+title: "Kmeans_Stages"
+author: "Becca"
+date: "Friday, December 02, 2016"
+output: html_document
+---
+
+This markdown performs kmeans cluster of the embryonic stages. 
+The plot_koptimum is also in OGGselection_CV_FC.Rmd may not need to load it
+```{r}
+plot_koptimum<- function (mydata,k,z) {
+  sp=z
+  #below # out is if you want to plot the within sums of squares, percent explained is more intuitive
+  #wss <- (nrow(mydata)-1)*sum(apply(mydata,2,var))
+  #for (i in 2:k) wss[i] <- sum(kmeans(mydata,
+   #                                    centers=i)$withinss)
+  #y<-plot(1:k, wss, type="b", main=sp, xlab="Number of Clusters",
+   #  ylab="Within groups sum of squares")
+  percent_explained<-c()
+  for (i in 1:k) percent_explained[i] <- (kmeans(Gal.shared.OGG.exp,
+                                                 i))$betweenss/(kmeans(Gal.shared.OGG.exp, 
+                                                                       i))$totss
+  y<-plot(1:k, 
+          percent_explained, 
+          type="b", 
+          main=sp, 
+          xlab="Number of Clusters",
+          ylab="proportion of variance explained")
+
+  return(y)}
+
+k_optimum<- function (mydata,k,z) {
+  sp=z
+  #wss <- (nrow(mydata)-1)*sum(apply(mydata,2,var)) #this returns the w/in ss
+  #for (i in 2:k) wss[i] <- sum(kmeans(mydata,
+                                       #centers=i)$withinss)
+  #y<-wss
+  percent_explained<-c()
+  for (i in 1:k) percent_explained[i] <- (kmeans(Gal.shared.OGG.exp,
+                                                 i))$betweenss/(kmeans(Gal.shared.OGG.exp, 
+                                                                       i))$totss
+  y<-percent_explained
+  return(y)}
+
+#test<-k_optimum(Mus.shared.OGG.exp[c(1,5:19),],9, "Mus")
+```
+
+identify and plot the optimum k for each species
+
+```{r}
+library("reshape2")
+library("ggplot2")
+
+kmeans_percent_explained<-rbind.data.frame(k_optimum(Mus.shared.OGG.exp[c(1,5:19),],9, "Mus"),
+                                           k_optimum(Gal.shared.OGG.exp,9, "Gallus"),
+                                           k_optimum(Dan.shared.OGG.exp[2:11,],9, "Danio"),
+                                           k_optimum(Xlaev.shared.OGG.exp,9, "X.laevis"),
+                                           k_optimum(Xtrop.shared.OGG.exp,9, "X.tropicalis"))
+row.names(kmeans_percent_explained)<-c("Mus", 
+                                       "Gallus", 
+                                       "Danio", 
+                                       "X. laevis", 
+                                       "X. tropicalis")
+kmeans_percent_explained<-cbind.data.frame(kmeans_percent_explained,
+                                           sp=row.names(kmeans_percent_explained))
+colnames(kmeans_percent_explained)<-c("k=1", 
+                                      "k=2", 
+                                      "k=3", 
+                                      "k=4", 
+                                      "k=5", 
+                                      "k=6", 
+                                      "k=7", 
+                                      "k=8", 
+                                      "k=9", 
+                                      "sp")
+
+
+pdf("k_selection.pdf", useDingbats=FALSE)
+ggplot(data=df, aes(x=clusterNum, 
+                    y=PercentExpl, 
+                    group = sp, 
+                    colour = sp)) +
+    geom_line() +
+    geom_point( size=4, 
+                shape=21)+
+    theme_bw()+ theme(panel.border = element_blank(), 
+                      plot.background = element_blank(),
+                    panel.grid.major=element_blank(), 
+                    panel.grid.minor=element_blank()) + 
+    theme(axis.line.x =element_line(color = "black"))+
+    theme(axis.line.y =element_line(color = "black"))+
+    labs(x="cluster number", 
+         y="proportion of variance exprlained")
+dev.off()
+
+
+pdf("k_optima.pdf")
+plot_koptimum(Mus.shared.OGG.exp[c(1,5:19),],9, "Mus")
+plot_koptimum(Gal.shared.OGG.exp,9, "Gallus")
+plot_koptimum(Dan.shared.OGG.exp[2:11,],9, "Danio")
+plot_koptimum(Xlaev.shared.OGG.exp,9, "X. laev")
+plot_koptimum(Xtrop.shared.OGG.exp,9, "X. tropicalis")
+dev.off()
+```
+
+```{r}
+#mydata=Mus.shared.OGG.exp[c(1,5:19),]
+
+kmeans_ALLOGGs_stages<- function (mydata,k,z) {
+  kmeans_df <- data.frame() #accumulator for results
+  for(i in 2:k){ #run kmeans for all clusters up to 100
+  clusterID<-kmeans(x=mydata, centers=i)  #Run kmeans for each level of i
+  #Combine cluster number and cost together, write to df
+  kmeans_df<- rbind(kmeans_df, rbind(clusterID$cluster)) 
+  }
+  kmeans_df<-rbind.data.frame(kmeans_df, timepoint=colnames(kmeans_df))
+  row.names(kmeans_df)<-c(3:k, "timepoint")
+  kmeans_df<-cbind.data.frame(kmeans_df, sp=rep(z, k))
+  return(kmeans_df) }
+
+#mus start rearranging order at k=6 
+#Very important: this does not enforce that cluster 1 is the earliest cluster. This has to be adjusted!!! 
+#Mus_clusterID<-kmeans_ALLOGGs_stages(Mus.shared.OGG.exp[c(1,5:19),], 5, "Mus")
+#Gallus_clusterID<-kmeans_ALLOGGs_stages(Gal.shared.OGG.exp, 5, "Gallus")
+#Danio_clusterID<-kmeans_ALLOGGs_stages(Dan.shared.OGG.exp[2:11,], 5, "Danio")
+#Xlaev_clusterID<-kmeans_ALLOGGs_stages(Xlaev.shared.OGG.exp, 5, "X. laevis")
+#Xtrop_clusterID<-kmeans_ALLOGGs_stages(Xtrop.shared.OGG.exp, 5, "X. tropicalis")
+                                          
+```

@@ -1,0 +1,815 @@
+---
+title: "MeanByCluster_OGG"
+author: "Becca"
+date: "December 8, 2016"
+output: html_document
+---
+
+To compare rank correlations in gene expression across species at different time points (early, middle, late) we have to first collapse the within species variation to one score per OGG for each species,timestep(k). SpeciesClustmeanWI
+
+```{r}
+#a=Xlaev.interspecificNORM.avgOGG
+#a1=Xlaev_clusterID
+#k=3
+
+library("dplyr")
+library("plyr")
+SpeciesClustmeanWI<-function(a, a1, k){
+a1<-a1[,c(1,2,k)]
+colnames(a1)=c("species", "timepoint", "k")
+a=cbind.data.frame(a, timepoint=a1$timepoint)
+ak=merge(a1, a, by='timepoint', all=FALSE)
+ak=ak[,-c(1:2)]
+ak1= plyr::ddply(data.frame(ak),  "k", plyr::numcolwise(mean))
+ak1=ak1[,-1]
+return(ak1)
+}
+
+SpeciesClustVarWI<-function(a, a1, k){
+a1<-a1[,c(1,2,k)]
+colnames(a1)=c("species", "timepoint", "k")
+a=cbind.data.frame(a, timepoint=a1$timepoint)
+ak=merge(a1, a, by='timepoint', all=FALSE)
+ak=ak[,-c(1:2)]
+ak1= plyr::ddply(data.frame(ak),  "k", plyr::numcolwise(var))
+ak1=ak1[,-1]
+return(ak1)
+}
+```
+Implimentation of SpeciesClustmeanWI to average gene expression within cluster
+```{r}
+MusMeanBYclust3<-SpeciesClustmeanWI(Mus.shared.OGG.exp[-c(2:4),], 
+                                    Mus_clusterID, 3)
+GalMeanBYclust3<-SpeciesClustmeanWI(Gal.shared.OGG.exp, 
+                                    Gallus_clusterID, 3)
+DanMeanBYclust3<-SpeciesClustmeanWI(Dan.shared.OGG.exp[-c(1,12:15),], 
+                                    Danio_clusterID, 3)
+XlaevMeanBYclust3<-SpeciesClustmeanWI(Xlaev.shared.OGG.exp, 
+                                      Xlaev_clusterID, 3)
+XtropMeanBYclust3<-SpeciesClustmeanWI(Xtrop.shared.OGG.exp, 
+                                      Xtrop_clusterID, 3)
+
+MusMeanBYclust4<-SpeciesClustmeanWI(Mus.shared.OGG.exp[-c(2:4),], 
+                                    Mus_clusterID, 4)
+GalMeanBYclust4<-SpeciesClustmeanWI(Gal.shared.OGG.exp, 
+                                    Gallus_clusterID, 4)
+DanMeanBYclust4<-SpeciesClustmeanWI(Dan.shared.OGG.exp[-c(1,12:15),], 
+                                    Danio_clusterID, 4)
+XlaevMeanBYclust4<-SpeciesClustmeanWI(Xlaev.shared.OGG.exp, 
+                                      Xlaev_clusterID, 4)
+XtropMeanBYclust4<-SpeciesClustmeanWI(Xtrop.shared.OGG.exp, 
+                                      Xtrop_clusterID, 4)
+
+MusMeanBYclust5<-SpeciesClustmeanWI(Mus.shared.OGG.exp[-c(2:4),], 
+                                    Mus_clusterID, 5)
+GalMeanBYclust5<-SpeciesClustmeanWI(Gal.shared.OGG.exp, 
+                                    Gallus_clusterID, 5)
+DanMeanBYclust5<-SpeciesClustmeanWI(Dan.shared.OGG.exp[-c(1,12:15),], 
+                                    Danio_clusterID, 5)
+XlaevMeanBYclust5<-SpeciesClustmeanWI(Xlaev.shared.OGG.exp, 
+                                      Xlaev_clusterID, 5)
+XtropMeanBYclust5<-SpeciesClustmeanWI(Xtrop.shared.OGG.exp, 
+                                      Xtrop_clusterID, 5)
+
+####################################
+MusMeanBYclust5var<-SpeciesClustVarWI(Mus.shared.OGG.exp[-c(2:4),], 
+                                       Mus_clusterID, 5)
+GalMeanBYclust5var<-SpeciesClustVarWI(Gal.shared.OGG.exp, 
+                                       Gallus_clusterID, 5)
+DanMeanBYclust5var<-SpeciesClustVarWI(Dan.shared.OGG.exp[-c(1,12:15),],
+                                       Danio_clusterID, 5)
+XlaevMeanBYclust5var<-SpeciesClustVarWI(Xlaev.shared.OGG.exp, 
+                                         Xlaev_clusterID, 5)
+XtropMeanBYclust5var<-SpeciesClustVarWI(Xtrop.shared.OGG.exp,
+                                        Xtrop_clusterID, 5)
+
+```
+
+PWstageCor -- in AllPWcor.Rmd
+```{r}
+AllClustCor3<-rbind.data.frame(diag(PWstageCor(MusMeanBYclust3, GalMeanBYclust3)), 
+                 diag(PWstageCor(MusMeanBYclust3, DanMeanBYclust3)),
+                 diag(PWstageCor(MusMeanBYclust3, XlaevMeanBYclust3)),
+                 diag(PWstageCor(MusMeanBYclust3, XtropMeanBYclust3)),
+                 diag(PWstageCor(GalMeanBYclust3, DanMeanBYclust3)),
+                 diag(PWstageCor(GalMeanBYclust3, XlaevMeanBYclust3)),
+                 diag(PWstageCor(GalMeanBYclust3, XtropMeanBYclust3)),
+                 diag(PWstageCor(DanMeanBYclust3, XlaevMeanBYclust3)),
+                 diag(PWstageCor(DanMeanBYclust3, XtropMeanBYclust3)),
+                 diag(PWstageCor(XtropMeanBYclust3, XlaevMeanBYclust3)))
+colnames(AllClustCor3)<-c("cluster1", "cluster2", "cluster3")
+rownames(AllClustCor3)<-c("MusGal", "MusDan", "MusXlaev", "MusXtrop", "GalDan",
+                          "GalXlaev", "GalXtrop", "XlaevDan", "XtropDan", 
+                          "XlaevXtrop")
+AllClustCor3_Nolaevis<-AllClustCor3[-c(3,6,8,10),]
+AllClustCor3_Notrop<-AllClustCor3[-c(4,7,9:10),]
+
+AllClustCor4<-rbind.data.frame(diag(PWstageCor(MusMeanBYclust4, GalMeanBYclust4)), 
+                 diag(PWstageCor(MusMeanBYclust4, DanMeanBYclust4)),
+                 diag(PWstageCor(MusMeanBYclust4, XlaevMeanBYclust4)),
+                 diag(PWstageCor(MusMeanBYclust4, XtropMeanBYclust4)),
+                 diag(PWstageCor(GalMeanBYclust4, DanMeanBYclust4)),
+                 diag(PWstageCor(GalMeanBYclust4, XlaevMeanBYclust4)),
+                 diag(PWstageCor(GalMeanBYclust4, XtropMeanBYclust4)),
+                 diag(PWstageCor(DanMeanBYclust4, XlaevMeanBYclust4)),
+                 diag(PWstageCor(DanMeanBYclust4, XtropMeanBYclust4)),
+                 diag(PWstageCor(XtropMeanBYclust4, XlaevMeanBYclust4)))
+colnames(AllClustCor4)<-c("cluster1", "cluster2", "cluster3", "cluster4")
+rownames(AllClustCor4)<-c("MusGal", "MusDan", "MusXlaev", "MusXtrop", "GalDan",
+                          "GalXlaev", "GalXtrop", "XlaevDan", "XtropDan", 
+                          "XlaevXtrop")
+AllClustCor4_Nolaevis<-AllClustCor4[-c(3,6,8,10),]
+AllClustCor4_Notrop<-AllClustCor4[-c(4,7,9:10),]
+
+
+AllClustCor5<-rbind.data.frame(diag(PWstageCor(MusMeanBYclust5, GalMeanBYclust5)), 
+                 diag(PWstageCor(MusMeanBYclust5, DanMeanBYclust5)),
+                 diag(PWstageCor(MusMeanBYclust5, XlaevMeanBYclust5)),
+                 diag(PWstageCor(MusMeanBYclust5, XtropMeanBYclust5)),
+                 diag(PWstageCor(GalMeanBYclust5, DanMeanBYclust5)),
+                 diag(PWstageCor(GalMeanBYclust5, XlaevMeanBYclust5)),
+                 diag(PWstageCor(GalMeanBYclust5, XtropMeanBYclust5)),
+                 diag(PWstageCor(DanMeanBYclust5, XlaevMeanBYclust5)),
+                 diag(PWstageCor(DanMeanBYclust5, XtropMeanBYclust5)),
+                 diag(PWstageCor(XtropMeanBYclust5, XlaevMeanBYclust5)))
+colnames(AllClustCor5)<-c("cluster1", "cluster2", "cluster3", "cluster4", "cluster5")
+rownames(AllClustCor5)<-c("MusGal", "MusDan", "MusXlaev", "MusXtrop", "GalDan",
+                          "GalXlaev", "GalXtrop", "XlaevDan", "XtropDan", 
+                          "XlaevXtrop")
+
+AllClustCor5_Nolaevis<-AllClustCor5[-c(3,6,8,10),]
+AllClustCor5_Notrop<-AllClustCor5[-c(4,7,9:10),]
+
+#run all below to regenerate the peakedness 
+AllClustCor5_Nolaevis_peakedness<-cbind.data.frame(colnames(AllClustCor5_Nolaevis),
+                                                   apply(AllClustCor5_Nolaevis, 2, mean))
+colnames(AllClustCor5_Nolaevis_peakedness)<-c("cluster", "clusterMean")
+AllClustCor5_Nolaevis_peakedness<-cbind.data.frame(filter(AllClustCor5_Nolaevis_peakedness, 
+                                                       cluster %in% c("cluster3", 
+                                                                      "cluster2")) %>%
+                                                     dplyr::summarise(uppermean = mean(clusterMean)),
+                                                #second, filter, group and mean other non-peak clusters
+                                                filter(AllClustCor5_Nolaevis_peakedness,
+                                                       cluster %in% c("cluster1",
+                                                                      "cluster4",
+                                                                      "cluster5")) %>% 
+                                                  dplyr::summarise(lowermean = mean(clusterMean))) 
+
+AllClustCor5_Nolaevis_peakedness<-mutate(AllClustCor5_Nolaevis_peakedness, 
+                                        peak = uppermean - lowermean)
+  
+```
+Compare Clust correlation by phylogenetic relatedness
+Implimentation of SpeciesClustmeanWI use the microarray data normalized for comparison accross species (see normalizeArrayBYsp.Rmd) Normalization takes the mean gene expression across all included time point and subtract that from the expression value. 
+```{r, weird -- do not use... microarray values normalized for for across species comps}
+MusMeanBYclust3_norm<-SpeciesClustmeanWI(Mus.interspecificNORM.avgOGG, Mus_clusterID, 3)
+GalMeanBYclust3_norm<-SpeciesClustmeanWI(Gal.interspecificNORM.avgOGG, Gallus_clusterID, 3)
+DanMeanBYclust3_norm<-SpeciesClustmeanWI(Dan.interspecificNORM.avgOGG, Danio_clusterID, 3)
+XlaevMeanBYclust3_norm<-SpeciesClustmeanWI(Xlaev.interspecificNORM.avgOGG, Xlaev_clusterID, 3)
+XtropMeanBYclust3_norm<-SpeciesClustmeanWI(Xtrop.interspecificNORM.avgOGG, Xtrop_clusterID, 3)
+
+MusMeanBYclust4_norm<-SpeciesClustmeanWI(Mus.interspecificNORM.avgOGG, Mus_clusterID, 4)
+GalMeanBYclust4_norm<-SpeciesClustmeanWI(Gal.interspecificNORM.avgOGG, Gallus_clusterID, 4)
+DanMeanBYclust4_norm<-SpeciesClustmeanWI(Dan.interspecificNORM.avgOGG, Danio_clusterID, 4)
+XlaevMeanBYclust4_norm<-SpeciesClustmeanWI(Xlaev.interspecificNORM.avgOGG, Xlaev_clusterID, 4)
+XtropMeanBYclust4_norm<-SpeciesClustmeanWI(Xtrop.interspecificNORM.avgOGG, Xtrop_clusterID, 4)
+
+MusMeanBYclust5_norm<-SpeciesClustmeanWI(Mus.interspecificNORM.avgOGG, Mus_clusterID, 5)
+GalMeanBYclust5_norm<-SpeciesClustmeanWI(Gal.interspecificNORM.avgOGG, Gallus_clusterID, 5)
+DanMeanBYclust5_norm<-SpeciesClustmeanWI(Dan.interspecificNORM.avgOGG, Danio_clusterID, 5)
+XlaevMeanBYclust5_norm<-SpeciesClustmeanWI(Xlaev.interspecificNORM.avgOGG, Xlaev_clusterID, 5)
+XtropMeanBYclust5_norm<-SpeciesClustmeanWI(Xtrop.interspecificNORM.avgOGG, Xtrop_clusterID, 5)
+
+```
+for the normalized data
+PWstageCor -- in AllPWcor.Rmd
+```{r--weird normalization}
+AllClustCor3_norm<-rbind.data.frame(diag(PWstageCor(MusMeanBYclust3_norm, GalMeanBYclust3_norm)), 
+                 diag(PWstageCor(MusMeanBYclust3_norm, DanMeanBYclust3_norm)),
+                 diag(PWstageCor(MusMeanBYclust3_norm, XlaevMeanBYclust3_norm)),
+                 diag(PWstageCor(MusMeanBYclust3_norm, XtropMeanBYclust3_norm)),
+                 diag(PWstageCor(GalMeanBYclust3_norm, DanMeanBYclust3_norm)),
+                 diag(PWstageCor(GalMeanBYclust3_norm, XlaevMeanBYclust3_norm)),
+                 diag(PWstageCor(GalMeanBYclust3_norm, XtropMeanBYclust3_norm)),
+                 diag(PWstageCor(DanMeanBYclust3_norm, XlaevMeanBYclust3_norm)),
+                 diag(PWstageCor(DanMeanBYclust3_norm, XtropMeanBYclust3_norm)),
+                 diag(PWstageCor(XtropMeanBYclust3_norm, XlaevMeanBYclust3_norm)))
+colnames(AllClustCor3_norm)<-c("cluster1", "cluster2", "cluster3")
+rownames(AllClustCor3_norm)<-c("MusGal", "MusDan", "MusXlaev", "MusXtrop", "GalDan",
+                          "GalXlaev", "GalXtrop", "XlaevDan", "XtropDan", 
+                          "XlaevXtrop")
+
+AllClustCor4_norm<-rbind.data.frame(diag(PWstageCor(MusMeanBYclust4_norm, GalMeanBYclust4_norm)), 
+                 diag(PWstageCor(MusMeanBYclust4_norm, DanMeanBYclust4_norm)),
+                 diag(PWstageCor(MusMeanBYclust4_norm, XlaevMeanBYclust4_norm)),
+                 diag(PWstageCor(MusMeanBYclust4_norm, XtropMeanBYclust4_norm)),
+                 diag(PWstageCor(GalMeanBYclust4_norm, DanMeanBYclust4_norm)),
+                 diag(PWstageCor(GalMeanBYclust4_norm, XlaevMeanBYclust4_norm)),
+                 diag(PWstageCor(GalMeanBYclust4_norm, XtropMeanBYclust4_norm)),
+                 diag(PWstageCor(DanMeanBYclust4_norm, XlaevMeanBYclust4_norm)),
+                 diag(PWstageCor(DanMeanBYclust4_norm, XtropMeanBYclust4_norm)),
+                 diag(PWstageCor(XtropMeanBYclust4_norm, XlaevMeanBYclust4_norm)))
+colnames(AllClustCor4_norm)<-c("cluster1", "cluster2", "cluster3", "cluster4")
+rownames(AllClustCor4_norm)<-c("MusGal", "MusDan", "MusXlaev", "MusXtrop", "GalDan",
+                          "GalXlaev", "GalXtrop", "XlaevDan", "XtropDan", 
+                          "XlaevXtrop")
+
+AllClustCor5_norm<-rbind.data.frame(diag(PWstageCor(MusMeanBYclust5_norm, GalMeanBYclust5_norm)), 
+                 diag(PWstageCor(MusMeanBYclust5_norm, DanMeanBYclust5_norm)),
+                 diag(PWstageCor(MusMeanBYclust5_norm, XlaevMeanBYclust5_norm)),
+                 diag(PWstageCor(MusMeanBYclust5_norm, XtropMeanBYclust5_norm)),
+                 diag(PWstageCor(GalMeanBYclust5_norm, DanMeanBYclust5_norm)),
+                 diag(PWstageCor(GalMeanBYclust5_norm, XlaevMeanBYclust5_norm)),
+                 diag(PWstageCor(GalMeanBYclust5_norm, XtropMeanBYclust5_norm)),
+                 diag(PWstageCor(DanMeanBYclust5_norm, XlaevMeanBYclust5_norm)),
+                 diag(PWstageCor(DanMeanBYclust5_norm, XtropMeanBYclust5_norm)),
+                 diag(PWstageCor(XtropMeanBYclust5_norm, XlaevMeanBYclust5_norm)))
+colnames(AllClustCor5_norm)<-c("cluster1", "cluster2", "cluster3", "cluster4", "cluster5")
+rownames(AllClustCor5_norm)<-c("MusGal", "MusDan", "MusXlaev", "MusXtrop", "GalDan",
+                          "GalXlaev", "GalXtrop", "XlaevDan", "XtropDan", 
+                          "XlaevXtrop")
+
+```
+
+check for hourglass
+
+```{r}
+library("reshape2")
+library("ggplot2")
+box_RankCor_clust<-function(x){
+  rbind.data.frame(x, "cluster"=colnames(x))
+  x=t(x)
+  df<-melt(x, id="cluster")
+  #df<-df[,-1]
+  #colnames(df)<-c("k", "OGG", "acrossVar")
+  #df$k<-as.factor(df$k)
+  plot<-ggplot(df, aes(x=Var1, y=value))+
+    geom_boxplot()+
+    ylab("rank correlation")+  
+    theme_bw() + 
+    theme(axis.title.x=element_blank(),
+        axis.text.x=element_text(size=18,face="plain", 
+                                 color="black"),
+        axis.text.y=element_text(size=14,
+                                 face="plain"),
+        axis.title.y=element_text(size=18,
+                                  face="bold"),
+        panel.grid.major=element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border=element_rect(fill=NA, 
+                                  size=0.5,
+                                  color ="black"))
+  return(plot)
+}
+
+#x=AllClustCor5_Nolaevis
+#not generating the smoothed area?
+scatter_RankCor<-function(x){
+  #x=rbind.data.frame(x, 
+                  # "cluster"=colnames(x))
+  x=t(x)
+  df<-melt(x, id="cluster")
+  plot=ggplot(df, 
+         aes(x=as.factor(Var1), 
+             y=value,
+             color=Var2))+
+    geom_point(shape = 1, lwd=5, stroke=1.5)+
+    geom_smooth(method=x)+ #this isn't adding the ribbon
+    ylab("rank correlation")+  
+    theme_bw() + 
+    theme(axis.title.x=element_blank(),
+        axis.text.x=element_text(size=18,face="plain", 
+                                 color="black"),
+        axis.text.y=element_text(size=14,
+                                 face="plain"),
+        axis.title.y=element_text(size=18,
+                                  face="bold"),
+        panel.grid.major=element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border=element_rect(fill=NA, 
+                                  size=0.5,
+                                  color ="black"))
+  return(plot)
+}
+```
+
+```{r}
+pdf("AllClustCor_NoXlXt.pdf", useDingbats = FALSE)
+box_RankCor_clust(AllClustCor3[-10,])
+box_RankCor_clust(AllClustCor4[-10,])
+box_RankCor_clust(AllClustCor5[-10,])
+dev.off()
+
+pdf("AllClustCor.pdf", useDingbats = FALSE)
+box_RankCor_clust(AllClustCor3)
+box_RankCor_clust(AllClustCor4)
+box_RankCor_clust(AllClustCor5)
+dev.off()
+
+pdf("AllClustCor_NoXlaevis.pdf", useDingbats = FALSE)
+box_RankCor_clust(AllClustCor3[-c(4,9,10),])
+box_RankCor_clust(AllClustCor4[-c(4,9,10),])
+box_RankCor_clust(AllClustCor5[-c(4,9,10),])
+dev.off()
+
+pdf("AllClustCor_NoXtrop.pdf", useDingbats = FALSE)
+box_RankCor_clust(AllClustCor3[-c(3,8,10),])
+box_RankCor_clust(AllClustCor4[-c(3,8,10),])
+box_RankCor_clust(AllClustCor5[-c(3,8,10),])
+dev.off()
+
+
+```
+
+```{r}
+x=AllClustCor3
+y=nrow(x)
+k1<-data.frame(x$k1)
+colnames(k1)<-"k"
+k2<-data.frame(x$k2)
+colnames(k2)<-"k"
+k3<-data.frame(x$k3)
+colnames(k3)<-"k"
+time<-data.frame(rep(c("k1",
+                       "k2",
+                       "k3"), 
+                     c(y,
+                       y,
+                       y)))
+k3all=cbind.data.frame(time,k)
+colnames(k3all)<-c("time","k")
+
+summary(aov(k~time, data=k3all))
+TukeyHSD(aov(k~time, data=k3all))
+
+
+x=AllClustCor4[-10,]
+y=nrow(x)
+k1<-data.frame(x$cluster1)
+colnames(k1)<-"k"
+k2<-data.frame(x$cluster2)
+colnames(k2)<-"k"
+k3<-data.frame(x$cluster3)
+colnames(k3)<-"k"
+k4<-data.frame(x$cluster4)
+colnames(k4)<-"k"
+k=rbind.data.frame(k1,k2,k3,k4)
+time<-data.frame(rep(c("k1",
+                       "k2",
+                       "k3",
+                       "k4"), 
+                     c(y,
+                       y,
+                       y,
+                       y)))
+k4all=cbind.data.frame(time,k)
+colnames(k4all)<-c("time","k")
+
+summary(aov(k~time, data=k4all))
+TukeyHSD(aov(k~time, data=k4all))
+
+x=(AllClustCor5)
+y=nrow(x)
+k1<-data.frame(x$cluster1)
+colnames(k1)<-"k"
+k2<-data.frame(x$cluster2)
+colnames(k2)<-"k"
+k3<-data.frame(x$cluster3)
+colnames(k3)<-"k"
+k4<-data.frame(x$cluster4)
+colnames(k4)<-"k"
+k5<-data.frame(x$cluster5)
+colnames(k5)<-"k"
+k=rbind.data.frame(k1,
+                   k2,
+                   k3,
+                   k4,
+                   k5)
+time<-data.frame(rep(c("k1",
+                       "k2",
+                       "k3",
+                       "k4",
+                       "k5"), 
+                     c(y,
+                       y,
+                       y,
+                       y,
+                       y)))
+k5all=cbind.data.frame(time,
+                       k)
+colnames(k5all)<-c("time",
+                   "k")
+
+summary(aov(k~time, 
+            data=k5all))
+TukeyHSD(aov(k~time, 
+             data=k5all))
+
+x=(AllClustCor5_Nolaevis)
+y=nrow(x)
+k1<-data.frame(x$cluster1)
+colnames(k1)<-"k"
+k2<-data.frame(x$cluster2)
+colnames(k2)<-"k"
+k3<-data.frame(x$cluster3)
+colnames(k3)<-"k"
+k4<-data.frame(x$cluster4)
+colnames(k4)<-"k"
+k5<-data.frame(x$cluster5)
+colnames(k5)<-"k"
+k=rbind.data.frame(k1,
+                   k2,
+                   k3,
+                   k4,
+                   k5)
+time<-data.frame(rep(c("k1",
+                       "k2",
+                       "k3",
+                       "k4",
+                       "k5"), 
+                     c(y,
+                       y,
+                       y,
+                       y,
+                       y)))
+k5all=cbind.data.frame(time,
+                       k)
+colnames(k5all)<-c("time",
+                   "k")
+
+summary(aov(k~time, 
+            data=k5all))
+TukeyHSD(aov(k~time, 
+             data=k5all))
+
+x=(AllClustCor5_Notrop)
+y=nrow(x)
+k1<-data.frame(x$cluster1)
+colnames(k1)<-"k"
+k2<-data.frame(x$cluster2)
+colnames(k2)<-"k"
+k3<-data.frame(x$cluster3)
+colnames(k3)<-"k"
+k4<-data.frame(x$cluster4)
+colnames(k4)<-"k"
+k5<-data.frame(x$cluster5)
+colnames(k5)<-"k"
+k=rbind.data.frame(k1,
+                   k2,
+                   k3,
+                   k4,
+                   k5)
+time<-data.frame(rep(c("k1",
+                       "k2",
+                       "k3",
+                       "k4",
+                       "k5"), 
+                     c(y,
+                       y,
+                       y,
+                       y,
+                       y)))
+k5all=cbind.data.frame(time,
+                       k)
+colnames(k5all)<-c("time",
+                   "k")
+
+summary(aov(k~time, 
+            data=k5all))
+TukeyHSD(aov(k~time, 
+             data=k5all))
+
+```
+
+```{r}
+Mus90MeanBYclust3<-SpeciesClustmeanWI(Mus.shareTime90, Mus_clusterID, 3)
+Gal90MeanBYclust3<-SpeciesClustmeanWI(Gal.shareTime90, Gallus_clusterID, 3)
+Dan90MeanBYclust3<-SpeciesClustmeanWI(Dan.shareTime90, Danio_clusterID, 3)
+Xlaev90MeanBYclust3<-SpeciesClustmeanWI(Xlaev.shareTime90, Xlaev_clusterID, 3)
+Xtrop90MeanBYclust3<-SpeciesClustmeanWI(Xtrop.shareTime90, Xtrop_clusterID, 3)
+
+Mus90MeanBYclust4<-SpeciesClustmeanWI(Mus.shareTime90, Mus_clusterID, 4)
+Gal90MeanBYclust4<-SpeciesClustmeanWI(Gal.shareTime90, Gallus_clusterID, 4)
+Dan90MeanBYclust4<-SpeciesClustmeanWI(Dan.shareTime90, Danio_clusterID, 4)
+Xlaev90MeanBYclust4<-SpeciesClustmeanWI(Xlaev.shareTime90, Xlaev_clusterID, 4)
+Xtrop90MeanBYclust4<-SpeciesClustmeanWI(Xtrop.shareTime90, Xtrop_clusterID, 4)
+
+Mus90MeanBYclust5<-SpeciesClustmeanWI(Mus.shareTime90, Mus_clusterID, 5)
+Gal90MeanBYclust5<-SpeciesClustmeanWI(Gal.shareTime90, Gallus_clusterID, 5)
+Dan90MeanBYclust5<-SpeciesClustmeanWI(Dan.shareTime90, Danio_clusterID, 5)
+Xlaev90MeanBYclust5<-SpeciesClustmeanWI(Xlaev.shareTime90, Xlaev_clusterID, 5)
+Xtrop90MeanBYclust5<-SpeciesClustmeanWI(Xtrop.shareTime90, Xtrop_clusterID, 5)
+
+Mus90MeanBYclust6<-SpeciesClustmeanWI(Mus.shareTime90, Mus_clusterID, 6)
+Gal90MeanBYclust6<-SpeciesClustmeanWI(Gal.shareTime90, Gallus_clusterID, 6)
+Dan90MeanBYclust6<-SpeciesClustmeanWI(Dan.shareTime90, Danio_clusterID, 6)
+Xlaev90MeanBYclust6<-SpeciesClustmeanWI(Xlaev.shareTime90, Xlaev_clusterID, 6)
+Xtrop90MeanBYclust6<-SpeciesClustmeanWI(Xtrop.shareTime90, Xtrop_clusterID, 6)
+
+Clust90Cor3<-rbind.data.frame(diag(PWstageCor(Mus90MeanBYclust3, Gal90MeanBYclust3)), 
+                 diag(PWstageCor(Mus90MeanBYclust3, Dan90MeanBYclust3)),
+                 diag(PWstageCor(Mus90MeanBYclust3, Xlaev90MeanBYclust3)),
+                 diag(PWstageCor(Mus90MeanBYclust3, Xtrop90MeanBYclust3)),
+                 diag(PWstageCor(Gal90MeanBYclust3, Dan90MeanBYclust3)),
+                 diag(PWstageCor(Gal90MeanBYclust3, Xlaev90MeanBYclust3)),
+                 diag(PWstageCor(Gal90MeanBYclust3, Xtrop90MeanBYclust3)),
+                 diag(PWstageCor(Dan90MeanBYclust3, Xlaev90MeanBYclust3)),
+                 diag(PWstageCor(Dan90MeanBYclust3, Xtrop90MeanBYclust3)),
+                 diag(PWstageCor(Xtrop90MeanBYclust3, Xlaev90MeanBYclust3)))
+colnames(Clust90Cor3)<-c("k1", "k2", "k3")
+
+Clust90Cor4<-rbind.data.frame(diag(PWstageCor(Mus90MeanBYclust4, Gal90MeanBYclust4)), 
+                 diag(PWstageCor(Mus90MeanBYclust4, Dan90MeanBYclust4)),
+                 diag(PWstageCor(Mus90MeanBYclust4, Xlaev90MeanBYclust4)),
+                 diag(PWstageCor(Mus90MeanBYclust4, Xtrop90MeanBYclust4)),
+                 diag(PWstageCor(Gal90MeanBYclust4, Dan90MeanBYclust4)),
+                 diag(PWstageCor(Gal90MeanBYclust4, Xlaev90MeanBYclust4)),
+                 diag(PWstageCor(Gal90MeanBYclust4, Xtrop90MeanBYclust4)),
+                 diag(PWstageCor(Dan90MeanBYclust4, Xlaev90MeanBYclust4)),
+                 diag(PWstageCor(Dan90MeanBYclust4, Xtrop90MeanBYclust4)),
+                 diag(PWstageCor(Xtrop90MeanBYclust4, Xlaev90MeanBYclust4)))
+colnames(Clust90Cor4)<-c("k1", "k2", "k3", "k4")
+
+Clust90Cor5<-rbind.data.frame(diag(PWstageCor(Mus90MeanBYclust5, Gal90MeanBYclust5)), 
+                 diag(PWstageCor(Mus90MeanBYclust5, Dan90MeanBYclust5)),
+                 diag(PWstageCor(Mus90MeanBYclust5, Xlaev90MeanBYclust5)),
+                 diag(PWstageCor(Mus90MeanBYclust5, Xtrop90MeanBYclust5)),
+                 diag(PWstageCor(Gal90MeanBYclust5, Dan90MeanBYclust5)),
+                 diag(PWstageCor(Gal90MeanBYclust5, Xlaev90MeanBYclust5)),
+                 diag(PWstageCor(Gal90MeanBYclust5, Xtrop90MeanBYclust5)),
+                 diag(PWstageCor(Dan90MeanBYclust5, Xlaev90MeanBYclust5)),
+                 diag(PWstageCor(Dan90MeanBYclust5, Xtrop90MeanBYclust5)),
+                 diag(PWstageCor(Xtrop90MeanBYclust5, Xlaev90MeanBYclust5)))
+colnames(Clust90Cor5)<-c("k1", "k2", "k3", "k4", "k5")
+
+Clust90Cor6<-rbind.data.frame(diag(PWstageCor(Mus90MeanBYclust6, Gal90MeanBYclust6)), 
+                 diag(PWstageCor(Mus90MeanBYclust6, Dan90MeanBYclust6)),
+                 diag(PWstageCor(Mus90MeanBYclust6, Xlaev90MeanBYclust6)),
+                 diag(PWstageCor(Mus90MeanBYclust6, Xtrop90MeanBYclust6)),
+                 diag(PWstageCor(Gal90MeanBYclust6, Dan90MeanBYclust6)),
+                 diag(PWstageCor(Gal90MeanBYclust6, Xlaev90MeanBYclust6)),
+                 diag(PWstageCor(Gal90MeanBYclust6, Xtrop90MeanBYclust6)),
+                 diag(PWstageCor(Dan90MeanBYclust6, Xlaev90MeanBYclust6)),
+                 diag(PWstageCor(Dan90MeanBYclust6, Xtrop90MeanBYclust6)),
+                 diag(PWstageCor(Xtrop90MeanBYclust6, Xlaev90MeanBYclust6)))
+colnames(Clust90Cor6)<-c("k1", "k2", "k3", "k4", "k5", "k6")
+
+```
+
+```{r}
+
+pdf("Cust90Cor.pdf", useDingbats = FALSE)
+box_RankCor_clust(Clust90Cor3)
+box_RankCor_clust(Clust90Cor4)
+box_RankCor_clust(Clust90Cor5)
+box_RankCor_clust(Clust90Cor6)
+dev.off()
+```
+
+```{r}
+x=Clust90Cor3
+k1<-data.frame(x$k1)
+colnames(k1)<-"k"
+k2<-data.frame(x$k2)
+colnames(k2)<-"k"
+k3<-data.frame(x$k3)
+colnames(k3)<-"k"
+k=rbind.data.frame(k1,k2,k3)
+time<-data.frame(rep(c("k1","k2","k3"), c(10,10,10)))
+k3all=cbind.data.frame(time,k)
+colnames(k3all)<-c("time","k")
+
+summary(aov(k~time, data=k3all))
+TukeyHSD(aov(k~time, data=k3all))
+
+
+x=Clust90Cor4
+k1<-data.frame(x$k1)
+colnames(k1)<-"k"
+k2<-data.frame(x$k2)
+colnames(k2)<-"k"
+k3<-data.frame(x$k3)
+colnames(k3)<-"k"
+k4<-data.frame(x$k4)
+colnames(k4)<-"k"
+k=rbind.data.frame(k1,k2,k3,k4)
+time<-data.frame(rep(c("k1","k2","k3","k4"), c(10,10,10,10)))
+k4all=cbind.data.frame(time,k)
+colnames(k4all)<-c("time","k")
+
+summary(aov(k~time, data=k4all))
+TukeyHSD(aov(k~time, data=k4all))
+
+x=Clust90Cor5
+k1<-data.frame(x$k1)
+colnames(k1)<-"k"
+k2<-data.frame(x$k2)
+colnames(k2)<-"k"
+k3<-data.frame(x$k3)
+colnames(k3)<-"k"
+k4<-data.frame(x$k4)
+colnames(k4)<-"k"
+k5<-data.frame(x$k5)
+colnames(k5)<-"k"
+k=rbind.data.frame(k1,k2,k3,k4,k5)
+time<-data.frame(rep(c("k1","k2","k3","k4","k5"), c(10,10,10,10,10)))
+k5all=cbind.data.frame(time,k)
+colnames(k5all)<-c("time","k")
+
+summary(aov(k~time, data=k5all))
+TukeyHSD(aov(k~time, data=k5all))
+
+x=Clust90Cor6
+k1<-data.frame(x$k1)
+colnames(k1)<-"k"
+k2<-data.frame(x$k2)
+colnames(k2)<-"k"
+k3<-data.frame(x$k3)
+colnames(k3)<-"k"
+k4<-data.frame(x$k4)
+colnames(k4)<-"k"
+k5<-data.frame(x$k5)
+colnames(k5)<-"k"
+k6<-data.frame(x$k6)
+colnames(k6)<-"k"
+k=rbind.data.frame(k1,k2,k3,k4,k5,k6)
+time<-data.frame(rep(c("k1","k2","k3","k4","k5","k6"), c(10,10,10,10,10,10)))
+k6all=cbind.data.frame(time,k)
+colnames(k6all)<-c("time","k")
+
+summary(aov(k~time, data=k6all))
+TukeyHSD(aov(k~time, data=k6all))
+```
+
+```{r}
+MusKeyMeanBYclust3<-SpeciesClustmeanWI(MusKeyDev.shared[c(1,5:19),], Mus_clusterID, 3)
+GalKeyMeanBYclust3<-SpeciesClustmeanWI(GalKeyDev.shared, Gallus_clusterID, 3)
+DanKeyMeanBYclust3<-SpeciesClustmeanWI(DanKeyDev.shared[-c(1,12:15),], Danio_clusterID, 3)
+XlaevKeyMeanBYclust3<-SpeciesClustmeanWI(XlaevKeyDev.shared, Xlaev_clusterID, 3)
+XtropKeyMeanBYclust3<-SpeciesClustmeanWI(Xtrop.shareTime90, Xtrop_clusterID, 3)
+
+MusKeyMeanBYclust4<-SpeciesClustmeanWI(MusKeyDev.shared[c(1,5:19),], Mus_clusterID, 4)
+GalKeyMeanBYclust4<-SpeciesClustmeanWI(GalKeyDev.shared, Gallus_clusterID, 4)
+DanKeyMeanBYclust4<-SpeciesClustmeanWI(DanKeyDev.shared[-c(1,12:15),], Danio_clusterID, 4)
+XlaevKeyMeanBYclust4<-SpeciesClustmeanWI(XlaevKeyDev.shared, Xlaev_clusterID, 4)
+XtropKeyMeanBYclust4<-SpeciesClustmeanWI(XtropKeyDev.shared, Xtrop_clusterID, 4)
+
+MusKeyMeanBYclust5<-SpeciesClustmeanWI(MusKeyDev.shared[c(1,5:19),], Mus_clusterID, 5)
+GalKeyMeanBYclust5<-SpeciesClustmeanWI(GalKeyDev.shared, Gallus_clusterID, 5)
+DanKeyMeanBYclust5<-SpeciesClustmeanWI(DanKeyDev.shared[-c(1,12:15),], Danio_clusterID, 5)
+XlaevKeyMeanBYclust5<-SpeciesClustmeanWI(XlaevKeyDev.shared, Xlaev_clusterID, 5)
+XtropKeyMeanBYclust5<-SpeciesClustmeanWI(XtropKeyDev.shared, Xtrop_clusterID, 5)
+
+MusKeyMeanBYclust6<-SpeciesClustmeanWI(MusKeyDev.shared[c(1,5:19),], Mus_clusterID, 6)
+GalKeyMeanBYclust6<-SpeciesClustmeanWI(GalKeyDev.shared, Gallus_clusterID, 6)
+DanKeyMeanBYclust6<-SpeciesClustmeanWI(DanKeyDev.shared[-c(1,12:15),], Danio_clusterID, 6)
+XlaevKeyMeanBYclust6<-SpeciesClustmeanWI(XlaevKeyDev.shared, Xlaev_clusterID, 6)
+XtropKeyMeanBYclust6<-SpeciesClustmeanWI(XtropKeyDev.shared, Xtrop_clusterID, 6)
+```
+
+```{r}
+ClustKeyCor3<-rbind.data.frame(diag(PWstageCor(MusKeyMeanBYclust3, GalKeyMeanBYclust3)), 
+                 diag(PWstageCor(MusKeyMeanBYclust3, DanKeyMeanBYclust3)),
+                 diag(PWstageCor(MusKeyMeanBYclust3, XlaevKeyMeanBYclust3)),
+                 diag(PWstageCor(MusKeyMeanBYclust3, XtropKeyMeanBYclust3)),
+                 diag(PWstageCor(GalKeyMeanBYclust3, DanKeyMeanBYclust3)),
+                 diag(PWstageCor(GalKeyMeanBYclust3, XlaevKeyMeanBYclust3)),
+                 diag(PWstageCor(GalKeyMeanBYclust3, XtropKeyMeanBYclust3)),
+                 diag(PWstageCor(DanKeyMeanBYclust3, XlaevKeyMeanBYclust3)),
+                 diag(PWstageCor(DanKeyMeanBYclust3, XtropKeyMeanBYclust3)),
+                 diag(PWstageCor(XtropKeyMeanBYclust3, XlaevKeyMeanBYclust3)))
+colnames(ClustKeyCor3)<-c("k1", "k2", "k3")
+
+ClustKeyCor4<-rbind.data.frame(diag(PWstageCor(MusKeyMeanBYclust4, GalKeyMeanBYclust4)), 
+                 diag(PWstageCor(MusKeyMeanBYclust4, DanKeyMeanBYclust4)),
+                 diag(PWstageCor(MusKeyMeanBYclust4, XlaevKeyMeanBYclust4)),
+                 diag(PWstageCor(MusKeyMeanBYclust4, XtropKeyMeanBYclust4)),
+                 diag(PWstageCor(GalKeyMeanBYclust4, DanKeyMeanBYclust4)),
+                 diag(PWstageCor(GalKeyMeanBYclust4, XlaevKeyMeanBYclust4)),
+                 diag(PWstageCor(GalKeyMeanBYclust4, XtropKeyMeanBYclust4)),
+                 diag(PWstageCor(DanKeyMeanBYclust4, XlaevKeyMeanBYclust4)),
+                 diag(PWstageCor(DanKeyMeanBYclust4, XtropKeyMeanBYclust4)),
+                 diag(PWstageCor(XtropKeyMeanBYclust4, XlaevKeyMeanBYclust4)))
+colnames(Clust90Cor4)<-c("k1", "k2", "k3", "k4")
+
+ClustKeyCor5<-rbind.data.frame(diag(PWstageCor(MusKeyMeanBYclust5, GalKeyMeanBYclust5)), 
+                 diag(PWstageCor(MusKeyMeanBYclust5, DanKeyMeanBYclust5)),
+                 diag(PWstageCor(MusKeyMeanBYclust5, XlaevKeyMeanBYclust5)),
+                 diag(PWstageCor(MusKeyMeanBYclust5, XtropKeyMeanBYclust5)),
+                 diag(PWstageCor(GalKeyMeanBYclust5, DanKeyMeanBYclust5)),
+                 diag(PWstageCor(GalKeyMeanBYclust5, XlaevKeyMeanBYclust5)),
+                 diag(PWstageCor(GalKeyMeanBYclust5, XtropKeyMeanBYclust5)),
+                 diag(PWstageCor(DanKeyMeanBYclust5, XlaevKeyMeanBYclust5)),
+                 diag(PWstageCor(DanKeyMeanBYclust5, XtropKeyMeanBYclust5)),
+                 diag(PWstageCor(XtropKeyMeanBYclust5, XlaevKeyMeanBYclust5)))
+colnames(Clust90Cor5)<-c("k1", "k2", "k3", "k4", "k5")
+
+ClustKeyCor6<-rbind.data.frame(diag(PWstageCor(MusKeyMeanBYclust6, GalKeyMeanBYclust6)), 
+                 diag(PWstageCor(MusKeyMeanBYclust6, DanKeyMeanBYclust6)),
+                 diag(PWstageCor(MusKeyMeanBYclust6, XlaevKeyMeanBYclust6)),
+                 diag(PWstageCor(MusKeyMeanBYclust6, XtropKeyMeanBYclust6)),
+                 diag(PWstageCor(GalKeyMeanBYclust6, DanKeyMeanBYclust6)),
+                 diag(PWstageCor(GalKeyMeanBYclust6, XlaevKeyMeanBYclust6)),
+                 diag(PWstageCor(GalKeyMeanBYclust6, XtropKeyMeanBYclust6)),
+                 diag(PWstageCor(DanKeyMeanBYclust6, XlaevKeyMeanBYclust6)),
+                 diag(PWstageCor(DanKeyMeanBYclust6, XtropKeyMeanBYclust6)),
+                 diag(PWstageCor(XtropKeyMeanBYclust6, XlaevKeyMeanBYclust6)))
+colnames(Clust90Cor6)<-c("k1", "k2", "k3", "k4", "k5", "k6")
+```
+
+```{r}
+pdf("Cust90Cor.pdf", useDingbats = FALSE)
+box_RankCor_clust(ClustKeyCor3)
+box_RankCor_clust(ClustKeyCor4)
+box_RankCor_clust(ClustKeyCor5)
+box_RankCor_clust(ClustKeyCor6)
+dev.off()
+```
+
+
+```{r}
+library("plyr")
+#caluclates the within species mean of each OGG for k clusters
+stageClustmeanWI<-function(a, a1, b, b1, c, c1, 
+                        d, d1, e, e1, k, spA, 
+                        spB, spC, spD, spE){
+a1<-a1[,c(1,2,k+1)]
+colnames(a1)=c("species", "timepoint", "k")
+a=cbind.data.frame(a, timepoint=row.names(a))
+ak=merge(a1, a, by='timepoint', all=FALSE)
+ak=ak[,-c(1:2)]
+ak1= ddply(data.frame(ak),  "k", numcolwise(mean))
+ak1<-cbind.data.frame(ak1, "species"=rep(spA, k))
+ak1=ak1[,c(ncol(ak1),1:ncol(ak1)-1)]
+
+b1<-b1[,c(1,2,k+1)]
+colnames(b1)=c("species", "timepoint", "k")
+b=cbind.data.frame(b, timepoint=row.names(b))
+bk=merge(b1, b,by='timepoint', all=FALSE)
+bk=bk[,-c(1:2)]
+bk1= ddply(data.frame(bk),  "k", numcolwise(mean))
+bk1<-cbind.data.frame(bk1, "species"=rep(spB, k))
+bk1=bk1[,c(ncol(bk1),1:ncol(bk1)-1)]
+
+c1<-c1[,c(1,2,k+1)]
+colnames(c1)=c("species", "timepoint", "k")
+c=cbind.data.frame(c, timepoint=row.names(c))
+ck=merge(c1, c,by='timepoint', all=FALSE)
+ck=ck[,-c(1:2)]
+ck1= ddply(data.frame(ck),  "k", numcolwise(mean))
+ck1<-cbind.data.frame(ck1, "species"=rep(spC, k))
+ck1=ck1[,c(ncol(ck1),1:ncol(ck1)-1)]
+
+d1=d1[,c(1,2,k+1)]
+colnames(d1)=c("species", "timepoint", "k")
+d=cbind.data.frame(d, timepoint=d1$timepoint)
+dk=merge(d1, d,by='timepoint', all=FALSE)
+dk=dk[,-c(1:2)]
+dk1= ddply(data.frame(dk),  "k", numcolwise(mean))
+dk1<-cbind.data.frame(dk1, "species"=rep(spD, k))
+dk1=dk1[,c(ncol(dk1),1:ncol(dk1)-1)]
+
+e1=e1[,c(1,2,k+1)]
+colnames(e1)=c("species", "timepoint", "k")
+e=cbind.data.frame(e, timepoint=e1$timepoint)
+ek=merge(e1, e,by='timepoint', all=FALSE)
+ek=ek[,-c(1:2)]
+ek1= ddply((ek),  "k", numcolwise(mean))
+ek1<-cbind.data.frame(ek1, "species"=rep(spE, k))
+ek1=ek1[,c(ncol(ek1),1:ncol(ek1)-1)]
+
+all=rbind.data.frame(ak1, bk1, ck1, dk1, ek1)
+return(all)
+}
+
+```
+
+```{r}
+stageMean3WI<-stageClustmeanWI(Mus.shared.OGG.exp, Mus_clusterID, 
+                                             Gal.shared.OGG.exp, Gallus_clusterID,
+                                             Dan.shared.OGG.exp, Danio_clusterID, 
+                                             Xlaev.shared.OGG.exp, Xlaev_clusterID, 
+                                             Xtrop.shared.OGG.exp, Xtrop_clusterID, 
+                                             3, "Mus", "Gallus", "Danio", "Xlaev", "Xtrop")
+
+stageMean4WI<-stageClustmeanWI(Mus.shared.OGG.exp, Mus_clusterID, 
+                                             Gal.shared.OGG.exp, Gallus_clusterID,
+                                             Dan.shared.OGG.exp, Danio_clusterID, 
+                                             Xlaev.shared.OGG.exp, Xlaev_clusterID, 
+                                             Xtrop.shared.OGG.exp, Xtrop_clusterID, 
+                                             4, "Mus", "Gallus", "Danio", "Xlaev", "Xtrop")
+
+stageMean5WI<-stageClustmeanWI(Mus.shared.OGG.exp, Mus_clusterID, 
+                                             Gal.shared.OGG.exp, Gallus_clusterID,
+                                             Dan.shared.OGG.exp, Danio_clusterID, 
+                                             Xlaev.shared.OGG.exp, Xlaev_clusterID, 
+                                             Xtrop.shared.OGG.exp, Xtrop_clusterID, 
+                                             5, "Mus", "Gallus", "Danio", "Xlaev", "Xtrop")
+
+stageMean6WI<-stageClustmeanWI(Mus.shared.OGG.exp, Mus_clusterID, 
+                                             Gal.shared.OGG.exp, Gallus_clusterID,
+                                             Dan.shared.OGG.exp, Danio_clusterID, 
+                                             Xlaev.shared.OGG.exp, Xlaev_clusterID, 
+                                             Xtrop.shared.OGG.exp, Xtrop_clusterID, 
+                                             6, "Mus", "Gallus", "Danio", "Xlaev", "Xtrop")
+```

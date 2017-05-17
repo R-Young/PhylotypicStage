@@ -1,0 +1,68 @@
+---
+title: "Heatmap_speciesGeneCor"
+author: "Becca"
+date: "April 3, 2017"
+output: html_document
+---
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+library("RColorBrewer")
+library("pheatmap")
+
+#create the breaks
+bk2 = unique(c(seq(0, 0.25, length=9), 
+               seq(0.251, 0.5, length=9), 
+               seq(0.51, 0.75, length=9),
+               seq(0.751, 1, length=9)))
+
+#set different color vectors for each interval
+col1 = colorRampPalette(c("white", "white"))(9) #set the order 
+col2 = colorRampPalette(c("white", 'mistyrose'))(9)
+col3 = colorRampPalette(c('mistyrose', 'pink'))(9)
+col4 = colorRampPalette(c("pink", "orangered3"))(9)
+colors2 <- c(col1, col2, col3, col4)
+
+#x=GalMeanBYclust5
+#y=GalMeanBYclust5
+
+SpSp_heatmaps<-function(x,y, sp1, sp2) {
+  x<-t(matrix(as.numeric(unlist(x)),nrow=nrow(x)))
+  y<-t(matrix(as.numeric(unlist(y)),nrow=nrow(y)))
+  z<-cor(x,y,use="pairwise.complete.obs", method="spearman")
+  plot<-pheatmap(z, 
+         cluster_rows = FALSE, 
+         cluster_cols = FALSE, 
+         color = colors2,
+         breaks = bk2, 
+         main = c(sp1, sp2))
+  return(plot)
+}
+
+pdf("SpAutoCor_5clusters.pdf")
+SpSp_heatmaps(GalMeanBYclust5,GalMeanBYclust5,"Gallus", "Gallus")
+SpSp_heatmaps(MusMeanBYclust5,MusMeanBYclust5,"Mus", "Mus")
+SpSp_heatmaps(XlaevMeanBYclust5,XlaevMeanBYclust5,"X. laevis", "X. laevis")
+SpSp_heatmaps(XtropMeanBYclust5,XtropMeanBYclust5,"X. tropicalis", "X. tropicalis")
+SpSp_heatmaps(DanMeanBYclust5,DanMeanBYclust5,"Danio", "Danio")
+dev.off()  
+
+pdf("SpAutoCor_4clusters.pdf")
+SpSp_heatmaps(GalMeanBYclust4,GalMeanBYclust4,"Gallus", "Gallus")
+SpSp_heatmaps(MusMeanBYclust4,MusMeanBYclust4,"Mus", "Mus")
+SpSp_heatmaps(XlaevMeanBYclust4,XlaevMeanBYclust4,"X. laevis", "X. laevis")
+SpSp_heatmaps(XtropMeanBYclust4,XtropMeanBYclust4,"X. tropicalis", "X. tropicalis")
+SpSp_heatmaps(DanMeanBYclust4,DanMeanBYclust4,"Danio", "Danio")
+dev.off()  
+
+
+  
+
+```
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

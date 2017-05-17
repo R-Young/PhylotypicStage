@@ -1,0 +1,328 @@
+---
+title: "KstageVarianceCompare"
+author: "Becca"
+date: "Tuesday, December 06, 2016"
+output: html_document
+---
+
+Function using plyr, takes OGG expression data, stage clustering, and k (number of clusters), calculates OGG variance for each OGG in each of k clusters (stagesClustVarWI). Second function (stagesClustVarAS) take mean of each OGG for each of k clusters in each species, then a variance of those means across species.  
+
+
+```{r}
+library("plyr")
+#caluclates the within species variane of each OGG for k clusters
+stageClustVarWI<-function(a, a1, b, b1, c, c1, 
+                        d, d1, e, e1, k, spA, 
+                        spB, spC, spD, spE){
+CV<-function(x) {(var(x)/mean(x))*100}
+a1<-a1[,c(1,2,k+1)]
+colnames(a1)=c("species", "timepoint", "k")
+a=cbind.data.frame(a, timepoint=row.names(a))
+ak=merge(a1, a, by='timepoint', all=FALSE)
+ak=ak[,-c(1:2)]
+ak1= ddply(ak,  "k", 
+           function(x) {
+             y=subset(x, select=-k)
+             apply(y,2,CV)})
+ak1<-cbind.data.frame(ak1, "species"=rep(spA, k))
+ak1=ak1[,c(ncol(ak1),1:ncol(ak1)-1)]
+
+b1<-b1[,c(1,2,k+1)]
+colnames(b1)=c("species", "timepoint", "k")
+b=cbind.data.frame(b, timepoint=row.names(b))
+bk=merge(b1, b,by='timepoint', all=FALSE)
+bk=bk[,-c(1:2)]
+bk1= ddply(bk,  "k", 
+           function(x) {
+             y=subset(x, select=-k)
+             apply(y,2,CV)})
+bk1<-cbind.data.frame(bk1, "species"=rep(spB, k))
+bk1=bk1[,c(ncol(bk1),1:ncol(bk1)-1)]
+
+c1<-c1[,c(1,2,k+1)]
+colnames(c1)=c("species", "timepoint", "k")
+c=cbind.data.frame(c, timepoint=row.names(c))
+ck=merge(c1, c,by='timepoint', all=FALSE)
+ck=ck[,-c(1:2)]
+ck1= ddply(ck,  "k", 
+           function(x) {
+             y=subset(x, select=-k)
+             apply(y,2,CV)})
+ck1<-cbind.data.frame(ck1, "species"=rep(spC, k))
+ck1=ck1[,c(ncol(ck1),1:ncol(ck1)-1)]
+
+d1=d1[,c(1,2,k+1)]
+colnames(d1)=c("species", "timepoint", "k")
+d=cbind.data.frame(d, timepoint=d1$timepoint)
+dk=merge(d1, d,by='timepoint', all=FALSE)
+dk=dk[,-c(1:2)]
+dk1= ddply(dk,  "k", 
+           function(x) {
+             y=subset(x, select=-k)
+             apply(y,2,CV)})
+dk1<-cbind.data.frame(dk1, "species"=rep(spD, k))
+dk1=dk1[,c(ncol(dk1),1:ncol(dk1)-1)]
+
+e1=e1[,c(1,2,k+1)]
+colnames(e1)=c("species", "timepoint", "k")
+e=cbind.data.frame(e, timepoint=e1$timepoint)
+ek=merge(e1, e,by='timepoint', all=FALSE)
+ek=ek[,-c(1:2)]
+ek1= ddply(ek,  "k", 
+           function(x) {
+             y=subset(x, select=-k)
+             apply(y,2,CV)})
+ek1<-cbind.data.frame(ek1, "species"=rep(spE, k))
+ek1=ek1[,c(ncol(ek1),1:ncol(ek1)-1)]
+
+all=rbind.data.frame(ak1, bk1, ck1, dk1, ek1)
+return(all)
+}
+
+
+
+stageClustVarAS<-function(a, a1, b, b1, c, c1, 
+                        d, d1, e, e1, k){
+  CV<-function(x) {(var(x)/mean(x))*100}
+  a1<-a1[,c(1,2,k+1)]
+colnames(a1)=c("species", "timepoint", "k")
+a=cbind.data.frame(a, timepoint=row.names(a))
+ak=merge(a1, a, by='timepoint', all=FALSE)
+ak=ak[,-c(1:2)]
+ak1= ddply(ak,  "k", 
+           function(x) {
+             y=subset(x, select=-k)
+             apply(y,2,mean)})
+
+b1<-b1[,c(1,2,k+1)]
+colnames(b1)=c("species", "timepoint", "k")
+b=cbind.data.frame(b, timepoint=row.names(b))
+bk=merge(b1, b,by='timepoint', all=FALSE)
+bk=bk[,-c(1:2)]
+bk1= ddply(bk,  "k", 
+           function(x) {
+             y=subset(x, select=-k)
+             apply(y,2,mean)})
+
+c1<-c1[,c(1,2,k+1)]
+colnames(c1)=c("species", "timepoint", "k")
+c=cbind.data.frame(c, timepoint=row.names(c))
+ck=merge(c1, c,by='timepoint', all=FALSE)
+ck=ck[,-c(1:2)]
+ck1= ddply(ck,  "k", 
+           function(x) {
+             y=subset(x, select=-k)
+             apply(y,2,mean)})
+
+
+d1=d1[,c(1,2,k+1)]
+colnames(d1)=c("species", "timepoint", "k")
+d=cbind.data.frame(d, timepoint=row.names(d))
+dk=merge(d1, d,by='timepoint', all=FALSE)
+dk=dk[,-c(1:2)]
+dk1= ddply(dk,  "k", 
+           function(x) {
+             y=subset(x, select=-k)
+             apply(y,2,mean)})
+
+
+e1=e1[,c(1,2,k+1)]
+colnames(e1)=c("species", "timepoint", "k")
+e=cbind.data.frame(e, timepoint=row.names(e))
+ek=merge(e1, e,by='timepoint', all=FALSE)
+ek=ek[,-c(1:2)]
+ek1= ddply(ek,  "k", 
+           function(x) {
+             y=subset(x, select=-k)
+             apply(y,2,mean)})
+
+all=rbind.data.frame(ak1, bk1, ck1, dk1, ek1)
+allvar= ddply(all,  "k", 
+           function(x) {
+             y=subset(x, select=-k)
+             apply(y,2,CV)})
+allvar<-cbind.data.frame(allvar, "species"=rep("all", k))
+allvar=allvar[,c(ncol(allvar),1:ncol(allvar)-1)]
+return(allvar)
+}
+
+```
+
+For K's 3 to 6 run stageClustVarWI and stageClustVarAS and rbind them
+"...ClusterID" dfs are generated using kmeans_ALLOGGs_stages function in (Kmeans_Stages.Rmd)
+OGGs selected using OGGselection_CV_FC.Rmd
+
+All OGGs
+```{r}
+stageVark3WI<-stageClustVarWI(Mus.shared.OGG.exp, Mus_clusterID, 
+                                             Gal.shared.OGG.exp, Gallus_clusterID,
+                                             Dan.shared.OGG.exp, Danio_clusterID, 
+                                             Xlaev.shared.OGG.exp, Xlaev_clusterID, 
+                                             Xtrop.shared.OGG.exp, Xtrop_clusterID, 
+                                             3, "Mus", "Gallus", "Danio", "Xlaev", "Xtrop")
+stageVark3WI[is.na(stageVark3WI)] <- 0 #if a cluster has only one stage the variance is 0
+                               
+stageVark3AS<-stageClustVarAS(Mus.shared.OGG.exp, Mus_clusterID, 
+                                             Gal.shared.OGG.exp, Gallus_clusterID,
+                                             Dan.shared.OGG.exp, Danio_clusterID, 
+                                             Xlaev.shared.OGG.exp, Xlaev_clusterID, 
+                                             Xtrop.shared.OGG.exp, Xtrop_clusterID,3)
+
+stageVark4AS<-stageClustVarAS(Mus.shared.OGG.exp, Mus_clusterID, 
+                                             Gal.shared.OGG.exp, Gallus_clusterID,
+                                             Dan.shared.OGG.exp, Danio_clusterID, 
+                                             Xlaev.shared.OGG.exp, Xlaev_clusterID, 
+                                             Xtrop.shared.OGG.exp, Xtrop_clusterID,4)
+
+stageVark5AS<-stageClustVarAS(Mus.shared.OGG.exp, Mus_clusterID, 
+                                             Gal.shared.OGG.exp, Gallus_clusterID,
+                                             Dan.shared.OGG.exp, Danio_clusterID, 
+                                             Xlaev.shared.OGG.exp, Xlaev_clusterID, 
+                                             Xtrop.shared.OGG.exp, Xtrop_clusterID,5)
+
+stageVark6AS<-stageClustVarAS(Mus.shared.OGG.exp, Mus_clusterID, 
+                                             Gal.shared.OGG.exp, Gallus_clusterID,
+                                             Dan.shared.OGG.exp, Danio_clusterID, 
+                                             Xlaev.shared.OGG.exp, Xlaev_clusterID, 
+                                             Xtrop.shared.OGG.exp, Xtrop_clusterID,6)
+
+```
+
+For K's 3 to 6 run stageClustVarWI and stageClustVarAS and rbind them
+"...ClusterID" dfs are OGGs selected using OGGselection_CV_FC.Rmd
+
+top ten 
+```{r}
+#Time groupings were generated OGGselection_CV_FC.Rmd
+stageVark3WI90<-stageClustVarWI(Mus.shareTime90, Mus_clusterID, 
+                                             Gal.shareTime90, Gallus_clusterID,
+                                             Dan.shareTime90, Danio_clusterID, 
+                                             Xlaev.shareTime90, Xlaev_clusterID, 
+                                             Xtrop.shareTime90, Xtrop_clusterID, 
+                                             3, "Mus", "Gallus", "Danio", "Xlaev", "Xtrop")
+stageVark3WI90[is.na(stageVark3WI90)] <- 0
+
+
+stageVark3AS90<-stageClustVarAS(Mus.shareTime90, Mus_clusterID, 
+                                             Gal.shareTime90, Gallus_clusterID,
+                                             Dan.shareTime90, Danio_clusterID, 
+                                             Xlaev.shareTime90, Xlaev_clusterID, 
+                                             Xtrop.shareTime90, Xtrop_clusterID,3)
+
+stageVark4WI90<-stageClustVarWI(Mus.shareTime90, Mus_clusterID, 
+                                             Gal.shareTime90, Gallus_clusterID,
+                                             Dan.shareTime90, Danio_clusterID, 
+                                             Xlaev.shareTime90, Xlaev_clusterID, 
+                                             Xtrop.shareTime90, Xtrop_clusterID, 
+                                             4, "Mus", "Gallus", "Danio", "Xlaev", "Xtrop")
+stageVark4WI90[is.na(stageVark4WI90)] <- 0
+
+stageVark4AS90<-stageClustVarAS(Mus.shareTime90, Mus_clusterID, 
+                                             Gal.shareTime90, Gallus_clusterID,
+                                             Dan.shareTime90, Danio_clusterID, 
+                                             Xlaev.shareTime90, Xlaev_clusterID, 
+                                             Xtrop.shareTime90, Xtrop_clusterID,4)
+
+stageVark5WI90<-stageClustVarWI(Mus.shareTime90, Mus_clusterID, 
+                                             Gal.shareTime90, Gallus_clusterID,
+                                             Dan.shareTime90, Danio_clusterID, 
+                                             Xlaev.shareTime90, Xlaev_clusterID, 
+                                             Xtrop.shareTime90, Xtrop_clusterID, 
+                                             5, "Mus", "Gallus", "Danio", "Xlaev", "Xtrop")
+stageVark5WI90[is.na(stageVark5WI90)] <- 0
+
+stageVark5AS90<-stageClustVarAS(Mus.shareTime90, Mus_clusterID, 
+                                             Gal.shareTime90, Gallus_clusterID,
+                                             Dan.shareTime90, Danio_clusterID, 
+                                             Xlaev.shareTime90, Xlaev_clusterID, 
+                                             Xtrop.shareTime90, Xtrop_clusterID,5)
+
+
+stageVark6AS90<-stageClustVarAS(Mus.shareTime90, Mus_clusterID, 
+                                             Gal.shareTime90, Gallus_clusterID,
+                                             Dan.shareTime90, Danio_clusterID, 
+                                             Xlaev.shareTime90, Xlaev_clusterID, 
+                                             Xtrop.shareTime90, Xtrop_clusterID,6)
+
+
+```
+scatter plot
+```{r}
+library("reshape2")
+library("ggplot2")
+
+#x=withinSpecies Variance; y=Across Species Variance, n = cluster number, p= point size
+scatterWIonAS<-function(x,y,n, p){
+  df1<-melt(x, id=c("species", "k"))
+  colnames(df1)<-c("species", "k", "OGG", "withinVar")
+  df2<-melt(y, id=c("species", "k"))
+  df2<-df2[,-1]
+  colnames(df2)<-c("k", "OGG", "acrossVar")
+  df<-merge(df1, df2, by=c("OGG", "k"), keep=TRUE)
+  plot<-ggplot(data=subset(df, k==n), aes(x=(acrossVar), y=(withinVar), 
+                                          group = species, colour = species)) +
+    geom_point( size=4, shape=19)+
+    theme_bw()+ theme(panel.border = element_blank(), plot.background = element_blank(),
+                    panel.grid.major=element_blank(), 
+                    panel.grid.minor=element_blank()) + 
+    theme(axis.line.x =element_line(color = "black"))+
+    theme(axis.line.y =element_line(color = "black"))+
+    labs(x="Interspecific Variance", y="Intraspecific Variance")
+  return(plot)
+  }
+
+scatterWIonAS(stageVark3WI90, stageVark3AS90,1,5)
+scatterWIonAS(stageVark3WI90, stageVark3AS90,2,5)
+scatterWIonAS(stageVark3WI90, stageVark3AS90,3,5)
+
+scatterWIonAS(stageVark4WI90, stageVark4AS90,1,5)
+scatterWIonAS(stageVark4WI90, stageVark4AS90,2,5)
+scatterWIonAS(stageVark4WI90, stageVark4AS90,3,5)
+scatterWIonAS(stageVark4WI90, stageVark4AS90,4,5)
+
+scatterWIonAS(stageVark5WI90, stageVark5AS90,1,5)
+scatterWIonAS(stageVark5WI90, stageVark5AS90,2,5)
+scatterWIonAS(stageVark5WI90, stageVark5AS90,3,5)
+scatterWIonAS(stageVark5WI90, stageVark5AS90,4,5)
+scatterWIonAS(stageVark5WI90, stageVark5AS90,5,5)
+
+```
+
+
+```{r}
+library("reshape2")
+library("ggplot2")
+boxAS<-function(y){
+  df<-melt(y, id=c("species", "k"))
+  df<-df[,-1]
+  colnames(df)<-c("k", "OGG", "acrossVar")
+  df$k<-as.factor(df$k)
+  plot<-ggplot(df, aes(x=k, y=(acrossVar)))+
+    geom_boxplot()+
+    ylab("CV in expression across species")+  
+    theme_bw() + 
+    theme(axis.title.x=element_blank(),
+        axis.text.x=element_text(size=18,face="plain", 
+                                 color="black"),
+        axis.text.y=element_text(size=14,
+                                 face="plain"),
+        axis.title.y=element_text(size=18,
+                                  face="bold"),
+        panel.grid.major=element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border=element_rect(fill=NA, 
+                                  size=0.5,
+                                  color ="black"))
+  return(plot)
+}
+
+pdf("OGG_clusterBoxPlot.pdf")
+boxAS(stageVark3AS90)
+boxAS(stageVark4AS90)
+boxAS(stageVark5AS90)
+boxAS(stageVark6AS90)
+boxAS(stageVark3AS)
+boxAS(stageVark4AS)
+boxAS(stageVark5AS)
+boxAS(stageVark6AS)
+dev.off()

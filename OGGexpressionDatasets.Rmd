@@ -1,0 +1,106 @@
+---
+title: "GenerateOGG_expdata"
+author: "Becca"
+date: "Thursday, May 26, 2016"
+output: pdf_document
+---
+Takes time-point x gene (row x col) expression data 'expr_data' and averages expression of genes in the 
+same OGG using a conversion data frame 'OGG_data'. The 'OGG_data' argument takes a data frame with OGG IDs in column 1 and gene IDs in column 2. This function assumes many:1 mapping (no genes map to multiple OGGs)
+
+```{r}
+avgParalogousGenes <- function (expr_data, OGG_data) {
+  
+  ## Initialize output data frame
+  new_data <- data.frame(
+                matrix(data = vector(),
+                       nrow = nrow(expr_data), 
+                       ncol = 0), 
+                stringsAsFactors=F)
+  rownames(new_data) <- rownames(expr_data)
+    
+  ## Eliminate genes not mapped to an OGG
+  ## if (!all(genes_in_OGG %in% colnames(expr_data))) {browser()}
+  #expr_data <- expr_data[,colnames(expr_data) %in% as.character(OGG_data[,2])]
+  OGG_data <- OGG_data[as.character(OGG_data[,2]) %in% colnames(expr_data), ]
+  
+  ## For each OGG, find all genes that map to it and append their average expression to the output
+  for (OGG in unique(OGG_data[,1])) {
+    genes_in_OGG <- as.character(OGG_data[,2][(OGG_data[,1] == OGG)])
+    if (length(genes_in_OGG) == 1) {
+     ##if (!genes_in_OGG %in% colnames(expr_data)) {browser()}
+      new_data[,OGG] <- expr_data[,genes_in_OGG]
+    } else {
+      ##browser()
+      ##if (!all(genes_in_OGG %in% colnames(expr_data))) {browser()}
+      new_data[,OGG] <- rowMeans(expr_data[,genes_in_OGG])
+    }
+  }
+  
+  ## Return the output
+  return(new_data)
+}
+```
+
+Generate species specific OGG average expression datasets 
+```{r}
+Dan.sp.OGG.exp<-avgParalogousGenes(drer.all.stages,Dan.OGG)
+Gal.sp.OGG.exp<-avgParalogousGenes(ggal.all.stages,Gal.OGG)
+Mus.sp.OGG.exp<-avgParalogousGenes(mmus.all.stages.3,Mus.OGG)
+Xlaev.sp.OGG.exp<-avgParalogousGenes(xlaev.all.stages,xlaev.OGG)
+Xtrop.sp.OGG.exp<-avgParalogousGenes(xtrop.all.stages,xtrop.OGG)
+```
+
+cull the OGGs for each species to only contain those OGG for which expression data is available. Input Species mean expression by OGG (e.g., Gal.sp.OGG.exp)
+```{r}
+OGGs_with_expr_values<-function(OGG_data,expr_data) {
+  new_data <- OGG_data[as.character(OGG_data[,1]) %in% colnames(expr_data), ]
+  new_data <-as.character(new_data$OrthoGroup)
+  ## Return the output
+  return(new_data)
+}
+```
+
+OGGs with available expression data in each species
+```{r}
+Dan.OGG.expressed<-OGGs_with_expr_values(Dan.OGG,Dan.sp.OGG.exp)
+Gal.OGG.expressed<-OGGs_with_expr_values(Gal.OGG,Gal.sp.OGG.exp)
+Mus.OGG.expressed<-OGGs_with_expr_values(Mus.OGG,Mus.sp.OGG.exp)
+xlaev.OGG.expressed<-OGGs_with_expr_values(xlaev.OGG,Xlaev.sp.OGG.exp)
+xtrop.OGG.expressed<-OGGs_with_expr_values(xtrop.OGG,Xtrop.sp.OGG.exp)
+
+list.of.sp.OGGs<-list(Dan.OGG.expressed,Gal.OGG.expressed,Mus.OGG.expressed,xlaev.OGG.expressed,xtrop.OGG.expressed)
+
+shared_OGGs<-Reduce(intersect,list.of.sp.OGGs)
+```
+
+
+Function to limit species level expression dataset to only include shared OGGs
+```{r}
+exprSharedOGGs <- function (OGGs, OGG_expr_sp) {
+  ## Initialize output data frame
+  new_data <- data.frame(
+                matrix(data = vector(),
+                       nrow = nrow(OGG_expr_sp), 
+                       ncol = 0), 
+                stringsAsFactors=F)
+  rownames(new_data) <- rownames(OGG_expr_sp)
+    
+  ## Eliminate OGGs without expression data
+  new_data <- OGG_expr_sp[,colnames(OGG_expr_sp) %in% OGGs]
+  
+  ## Return the output
+  return(new_data)
+}
+```
+
+
+Generate WORKING DATA including mean expression (across paralogs) for OGGs shared by all species
+```{r}
+###Critical to check the order of stages!
+Dan.shared.OGG.exp<-exprSharedOGGs(shared_OGGs,Dan.sp.OGG.exp)
+Gal.shared.OGG.exp<-exprSharedOGGs(shared_OGGs,Gal.sp.OGG.exp)
+Mus.shared.OGG.exp<-exprSharedOGGs(shared_OGGs,Mus.sp.OGG.exp)
+Xlaev.shared.OGG.exp<-exprSharedOGGs(shared_OGGs,Xlaev.sp.OGG.exp)
+Xtrop.shared.OGG.exp<-exprSharedOGGs(shared_OGGs,Xtrop.sp.OGG.exp)
+```
+

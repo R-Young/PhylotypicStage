@@ -1,0 +1,258 @@
+---
+title: "AllPWcor"
+author: "Rebecca Young"
+date: "June 8, 2016"
+output: html_document
+---
+
+compute all pairwise correlaton
+```{r}
+PWstageCor<-function(x,y) {
+  x<-t(x)
+  y<-t(y)
+  z<-cor(x,y,use="pairwise.complete.obs", method="spearman")
+  return(z)
+  }
+```
+
+impliment for all comparisons
+```{r}
+Dan_Gal.cor<-PWstageCor(Dan.shared.OGG.exp, Gal.shared.OGG.exp)
+Dan_Mus.cor<-PWstageCor(Dan.shared.OGG.exp, Mus.shared.OGG.exp)
+Dan_X.laev.cor<-PWstageCor(Dan.shared.OGG.exp, Xlaev.shared.OGG.exp)
+Dan_X.trop.cor<-PWstageCor(Dan.shared.OGG.exp, Xtrop.shared.OGG.exp)
+
+Gal_Mus.cor<-PWstageCor(Gal.shared.OGG.exp, Mus.shared.OGG.exp)
+Gal_X.laev.cor<-PWstageCor(Gal.shared.OGG.exp, Xlaev.shared.OGG.exp)
+Gal_X.trop.cor<-PWstageCor(Gal.shared.OGG.exp, Xtrop.shared.OGG.exp)
+
+X.laev_Mus.cor<-PWstageCor(Xlaev.shared.OGG.exp,Mus.shared.OGG.exp)
+X.trop_Mus.cor<-PWstageCor(Xtrop.shared.OGG.exp,Mus.shared.OGG.exp)
+
+X.laev_trop.cor<-PWstageCor(Xlaev.shared.OGG.exp,Xtrop.shared.OGG.exp)
+
+```
+
+ANOVA comparing PW species correlation strength at different time steps
+====================================================================
+function to turn the PW matrix of sp-sp correlation into a linear vector
+join these into a df 
+```{r}
+#June 9, 2016 n's: Dan: n=6; Gal: n=5; Mus: n=4; X.laev: n=4; X.trop: n=4 
+
+TimeStep15_PWcorMatix<-function(x,s1n,s2n ) { #here x is the correlation matrix. y defines the steps SPECIES SPECIFIC
+  early<-x[c(1:s1n),c(1:s2n)]
+  middle<-x[c((s1n+1): (15-s1n)) , c((s2n+1):(15-s2n))]
+  late<-x[c((16-s1n): 15) , c((16-s2n):15)]
+  
+  early[lower.tri(early,diag = TRUE)]<-NA
+  middle[lower.tri(middle,diag = TRUE)]<-NA
+  late[lower.tri(late,diag = TRUE)]<-NA
+
+  cor<-as.vector(early)
+  cor<-na.omit(cor)
+  cor<-data.matrix(cor)  
+  time<-rep(c('early'), c(length(cor)))
+  early<-data.frame(time, cor)
+  
+  cor<-as.vector(middle)
+  cor<-na.omit(cor)
+  cor<-data.matrix(cor)
+  time<-rep(c('middle'), c(length(cor)))
+  middle<-data.frame(time, cor)
+  
+  cor<-as.vector(late)
+  cor<-na.omit(cor)
+  cor<-data.matrix(cor)
+  time<-rep(c('late'), c(length(cor)))
+  late<-data.frame(time, cor)
+  
+  timesteps<-rbind(early,middle,late)
+  return(timesteps)
+  }
+  
+TimeStep19_PWcorMatix<-function(x,s1n,s2n ) { #here x is the correlation matrix. y defines the steps SPECIES SPECIFIC
+  early<-x[c(1:s1n),c(1:s2n)]
+  middle<-x[c((s1n+1): (15-s1n)) , c((s2n+1):(19-s2n))]
+  late<-x[c((16-s1n): 15) , c((20-s2n):19)]
+  
+  early[lower.tri(early,diag = TRUE)]<-NA
+  middle[lower.tri(middle,diag = TRUE)]<-NA
+  late[lower.tri(late,diag = TRUE)]<-NA
+
+  cor<-as.vector(early)
+  cor<-na.omit(cor)
+  cor<-data.matrix(cor)  
+  time<-rep(c('early'), c(length(cor)))
+  early<-data.frame(time, cor)
+  
+  cor<-as.vector(middle)
+  cor<-na.omit(cor)
+  cor<-data.matrix(cor)
+  time<-rep(c('middle'), c(length(cor)))
+  middle<-data.frame(time, cor)
+  
+  cor<-as.vector(late)
+  cor<-na.omit(cor)
+  cor<-data.matrix(cor)
+  time<-rep(c('late'), c(length(cor)))
+  late<-data.frame(time, cor)
+  
+  timesteps<-rbind(early,middle,late)
+  return(timesteps)
+  }
+```
+
+generate aov datasets
+```{r}
+
+#June 9, 2016 n's: Dan: n=6; Gal: n=5; Mus: n=4; X.laev: n=4; X.trop: n=4 
+Dan_Gal.TimeCor<-TimeStep15_PWcorMatix(Dan_Gal.cor,6,5)
+Dan_Mus.TimeCor<-TimeStep19_PWcorMatix(Dan_Mus.cor,6,4)
+Dan_Xlaev.TimeCor<-TimeStep15_PWcorMatix(Dan_X.laev.cor,6,4)
+Dan_Xtrop.TimeCor<-TimeStep15_PWcorMatix(Dan_X.trop.cor,6,4)
+
+Gal_Mus.TimeCor<-TimeStep19_PWcorMatix(Gal_Mus.cor,5,4)
+Gal_Xlaev.TimeCor<-TimeStep15_PWcorMatix(Gal_X.laev.cor,5,4)
+Gal_Xtrop.TimeCor<-TimeStep15_PWcorMatix(Gal_X.trop.cor,5,4)
+
+Xlaev_Mus.TimeCor<-TimeStep19_PWcorMatix(X.laev_Mus.cor,4,4)
+Xtrop_Mus.TimeCor<-TimeStep19_PWcorMatix(X.trop_Mus.cor,4,4)
+
+Xlaev_Xtrop.TimeCor<-TimeStep15_PWcorMatix(X.laev_trop.cor,4,4)
+
+All.TimeCor_Xtrop<-rbind(Dan_Gal.TimeCor, Dan_Mus.TimeCor,Dan_Xlaev.TimeCor, Dan_Xtrop.TimeCor,Gal_Mus.TimeCor,Gal_Xlaev.TimeCor,Gal_Xtrop.TimeCor,Xlaev_Mus.TimeCor,Xtrop_Mus.TimeCor, Xlaev_Xtrop.TimeCor)
+
+All.TimeCor<-rbind(Dan_Gal.TimeCor, Dan_Mus.TimeCor,Dan_Xlaev.TimeCor, Gal_Mus.TimeCor,Gal_Xlaev.TimeCor,Xlaev_Mus.TimeCor)
+
+library("plyr")
+Dan_Gal.TimeCor_means<-ddply(Dan_Gal.TimeCor,~time,summarise,cor=mean(cor))
+Dan_Mus.TimeCor_means<-ddply(Dan_Mus.TimeCor,~time,summarise,cor=mean(cor))
+Dan_Xlaev.TimeCor_means<-ddply(Dan_Xlaev.TimeCor,~time,summarise,cor=mean(cor))
+Dan_Xtrop.TimeCor_means<-ddply(Dan_Xtrop.TimeCor,~time,summarise,cor=mean(cor))
+
+Gal_Mus.TimeCor_means<-ddply(Gal_Mus.TimeCor,~time,summarise,cor=mean(cor))
+Gal_Xlaev.TimeCor_means<-ddply(Gal_Xlaev.TimeCor,~time,summarise,cor=mean(cor))
+Gal_Xtrop.TimeCor_means<-ddply(Gal_Xtrop.TimeCor,~time,summarise,cor=mean(cor))
+
+Xlaev_Mus.TimeCor_means<-ddply(Xlaev_Mus.TimeCor,~time,summarise,cor=mean(cor))
+Xtrop_Mus.TimeCor_means<-ddply(Xtrop_Mus.TimeCor,~time,summarise,cor=mean(cor))
+
+Xlaev_Xtrop.TimeCor_means<-ddply(Xlaev_Xtrop.TimeCor,~time,summarise,cor=mean(cor))
+
+All.TimeCor_means<-rbind(Dan_Gal.TimeCor_means, Dan_Mus.TimeCor_means,Dan_Xlaev.TimeCor_means, Dan_Xtrop.TimeCor_means,Gal_Mus.TimeCor_means,Gal_Xlaev.TimeCor_means,Gal_Xtrop.TimeCor_means,Xlaev_Mus.TimeCor_means,Xtrop_Mus.TimeCor_means, Xlaev_Xtrop.TimeCor_means)
+
+```
+
+run anova for each species pair; TukeyHSD for significance
+
+```{r}
+Dan_Gal.TimeCor_AOV<-aov(cor~time, data=Dan_Gal.TimeCor)
+Dan_Mus.TimeCor_AOV<-aov(cor~time, data=Dan_Mus.TimeCor)
+Dan_Xlaev.TimeCor_AOV<-aov(cor~time, data=Dan_Xlaev.TimeCor)
+Dan_Xtrop.TimeCor_AOV<-aov(cor~time, data=Dan_Xtrop.TimeCor)
+
+Gal_Mus.TimeCor_AOV<-aov(cor~time, data=Gal_Mus.TimeCor)
+Gal_Xlaev.TimeCor_AOV<-aov(cor~time, data=Gal_Xlaev.TimeCor)
+Gal_Xtrop.TimeCor_AOV<-aov(cor~time, data=Gal_Xtrop.TimeCor)
+
+Xlaev_Mus.TimeCor_AOV<-aov(cor~time, data=Xlaev_Mus.TimeCor)
+Xtrop_Mus.TimeCor_AOV<-aov(cor~time, data=Xtrop_Mus.TimeCor)
+
+Xlaev_Xtrop.TimeCor_AOV<-aov(cor~time, data=Xlaev_Xtrop.TimeCor)
+
+All.TimeCor_AOV<-aov(cor~time, data=All.TimeCor)
+summary(All.TimeCor_AOV)
+TukeyHSD(All.TimeCor_AOV)
+
+All.TimeCor_means_AOV<-aov(cor~time, data=All.TimeCor_means)
+summary(All.TimeCor_means_AOV)
+TukeyHSD(All.TimeCor_means_AOV)
+```
+
+Re-create Irie & Kuritani figure 
+```{r}
+cor<-c((Dan_Gal.cor[12,15]), (Dan_Mus.cor[12,19]), (Dan_X.laev.cor[12,15]), (Gal_Mus.cor[15,19]), (Gal_X.laev.cor[15,15]),  (X.laev_Mus.cor[15,19]))
+time<-rep(c('latest'), c(length(cor)))
+ 
+latest<-data.frame(time,cor)
+
+cor<-c((Dan_Gal.cor[8,8]), (Dan_Mus.cor[8,7]), (Dan_Mus.cor[8,7]), (Dan_X.laev.cor[8,10]), (Gal_Mus.cor[8,7]), (Gal_X.laev.cor[8,10]),  (X.laev_Mus.cor[10,7]))
+time<-rep(c('pharyngula'), c(length(cor)))
+ 
+pharyngula<-data.frame(time,cor)
+ 
+cor<-c((Dan_Gal.cor[2,1]), (Dan_Mus.cor[2,4]), (Dan_X.laev.cor[2,3]),  (Gal_Mus.cor[1,4]), (Gal_X.laev.cor[1,3]),  (X.laev_Mus.cor[3,4]))
+time<-rep(c('blastula_shield'), c(length(cor)))
+ 
+blastula_shield<-data.frame(time,cor)
+ 
+cor<-c((Dan_Mus.cor[1,2]), (Dan_X.laev.cor[1,1]), (X.laev_Mus.cor[1,2]))
+time<-rep(c('cleavage'), c(length(cor)))
+ 
+cleavage<-data.frame(time,cor)
+
+IK_timesteps<-rbind(latest, pharyngula, blastula_shield, cleavage)
+IK_timesteps_AOV<-aov(cor~time, data=IK_timesteps)
+summary(IK_timesteps_AOV)
+TukeyHSD(IK_timesteps_AOV)
+```
+
+Re-create Irie & Kuritani figure (with X. trop)
+```{r}
+cor<-c((Dan_Gal.cor[12,15]), (Dan_Mus.cor[12,15]), (Dan_X.laev.cor[12,15]), (Dan_X.trop.cor[12,15]), (Gal_Mus.cor[15,19]), (Gal_X.laev.cor[15,15]), (Gal_X.trop.cor[15,15]), (X.laev_Mus.cor[15,19]), (X.laev_trop.cor[15,15]), (X.trop_Mus.cor[15,19]))
+time<-rep(c('latest'), c(length(cor)))
+ 
+latest<-data.frame(time,cor)
+
+cor<-c((Dan_Gal.cor[8,8]), (Dan_Mus.cor[8,7]),  (Dan_X.laev.cor[8,10]), (Dan_X.trop.cor[8,10]), (Gal_Mus.cor[8,7]), (Gal_X.laev.cor[8,10]), (Gal_X.trop.cor[8,10]), (X.laev_Mus.cor[10,7]), (X.laev_trop.cor[10,10]), (X.trop_Mus.cor[10,7]))
+time<-rep(c('pharyngula'), c(length(cor)))
+ 
+pharyngula<-data.frame(time,cor)
+ 
+cor<-c((Dan_Gal.cor[2,1]), (Dan_Mus.cor[2,4]),  (Dan_X.laev.cor[2,3]), (Dan_X.trop.cor[2,3]), (Gal_Mus.cor[1,4]), (Gal_X.laev.cor[1,3]), (Gal_X.trop.cor[1,3]), (X.laev_Mus.cor[3,4]), (X.laev_trop.cor[3,3]), (X.trop_Mus.cor[3,4]))
+time<-rep(c('blastula_shield'), c(length(cor)))
+ 
+blastula_shield<-data.frame(time,cor)
+ 
+cor<-c((Dan_Mus.cor[1,2]), (Dan_X.laev.cor[1,1]), (Dan_X.trop.cor[1,1]), (X.laev_Mus.cor[1,2]), (X.laev_trop.cor[1,1]), (X.trop_Mus.cor[1,2]))
+time<-rep(c('cleavage'), c(length(cor)))
+ 
+cleavage<-data.frame(time,cor)
+
+IK_timesteps_Xtrop<-rbind(latest, pharyngula, blastula_shield, cleavage)
+test<-IK_timesteps_Xtrop
+test$time<-factor(test$time, levels=c("cleavage", "blastula_shield", "pharyngula", "latest"))
+
+IK_timesteps_Xtrop_AOV<-aov(cor~time, data=IK_timesteps)
+summary(IK_timesteps_Xtrop_AOV)
+TukeyHSD(IK_timesteps_Xtrop_AOV)
+```
+Plots
+```{r}
+scale_fill_manual(values=c('#addd8e','#31a354','#006837'))
+
+library("ggplot2")
+pdf("Allsp_SpearmanCorXTime")
+ggplot(All.TimeCor, aes(x = time, y = cor, fill=time)) + 
+geom_boxplot() + scale_fill_manual(values=c('#f7fcb9','#41ab5d','#005a32'))+ geom_jitter()+
+theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank()) 
+dev.off()
+
+##need to reverse the order!
+
+pdf("IK_replication")
+ggplot(IK_timesteps, aes(x = time, y = cor, fill=time)) + 
+geom_boxplot() + geom_jitter()+ scale_fill_manual(values=c('#f7fcb9','#addd8e','#41ab5d','#005a32'))+ 
+  theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank()) 
+dev.off()
+
+```

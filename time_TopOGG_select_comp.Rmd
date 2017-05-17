@@ -1,0 +1,216 @@
+---
+title: "PWcor_of_subset"
+author: "Becca"
+date: "Friday, September 23, 2016"
+output: html_document
+---
+Extracting OGGs that load the most strongly on "time PCs" across different PCA analyses including: all species, then with each species removed independently. Total of 6 PCA analyses. Top 10% of genes loading on "time PCs" were selected and compared (called "time_TopOGG"). Select those OGGs that are highlighted in at least 4/6 or the analyses.  
+```{r}
+OGGselect<-function(x,y) {
+  #x is a table that has Var1=OGGs that are top 10% of time PCs in at least one PCA
+  #y is gene expression values OGG by stage
+  x<-as.data.frame(x)
+  x<-x[x$Freq %in% c("6"), ] #selects OGGs that are in at least 6/6 
+  x<-as.vector(x$Var1)
+  z<-y[ , x, drop = FALSE]
+  return(z)
+  }
+
+```
+
+Apply to all species
+
+```{r, echo=FALSE}
+Dan_timeTopOGG<-OGGselect(top.OGGs.freq.table, Dan.shared.OGG.exp)
+Gal_timeTopOGG<-OGGselect(top.OGGs.freq.table, Gal.shared.OGG.exp)
+Mus_timeTopOGG<-OGGselect(top.OGGs.freq.table, Mus.shared.OGG.exp)
+Xlaev_timeTopOGG<-OGGselect(top.OGGs.freq.table, Xlaev.shared.OGG.exp)
+Xtrop_timeTopOGG<-OGGselect(top.OGGs.freq.table, Xtrop.shared.OGG.exp)
+```
+
+compute all pairwise correlaton (this is from -- AllPWcor.Rmd)
+```{r}
+PWstageCor<-function(x,y) {
+  x<-t(x)
+  y<-t(y)
+  z<-cor(x,y,use="pairwise.complete.obs", method="spearman")
+  return(z)
+  }
+```
+
+
+impliment comparaison within lineage to identify time blocks.
+```{r}
+Gal_Gal_timeTop.cor<-PWstageCor(Gal_timeTopOGG, Gal_timeTopOGG)
+Gal_Gal.cor<-PWstageCor(Gal.shared.OGG.exp, Gal.shared.OGG.exp)
+
+Mus_Mus_timeTop.cor<-PWstageCor(Mus_timeTopOGG, Mus_timeTopOGG)
+Mus_Mus.cor<-PWstageCor(Mus.shared.OGG.exp, Mus.shared.OGG.exp)
+
+Dan_Dan_timeTop.cor<-PWstageCor(Dan_timeTopOGG, Dan_timeTopOGG)
+Dan_Dan.cor<-PWstageCor(Dan.shared.OGG.exp, Dan.shared.OGG.exp)
+
+Xlaev_Xlaev_timeTop.cor<-PWstageCor(Xlaev_timeTopOGG, Xlaev_timeTopOGG)
+Xlaev_Xlaev.cor<-PWstageCor(Xlaev.shared.OGG.exp, Xlaev.shared.OGG.exp)
+
+Xtrop_Xtrop_timeTop.cor<-PWstageCor(Xtrop_timeTopOGG, Xtrop_timeTopOGG)
+Xtrop_Xtrop.cor<-PWstageCor(Xtrop.shared.OGG.exp, Xtrop.shared.OGG.exp)
+```
+
+
+impliment for all comparisons
+```{r}
+Dan_Gal_timeTop.cor<-PWstageCor(Dan_timeTopOGG, Gal_timeTopOGG)
+Dan_Mus_timeTop.cor<-PWstageCor(Dan_timeTopOGG, Mus_timeTopOGG)
+Dan_X.laev_timeTop.cor<-PWstageCor(Dan_timeTopOGG, Xlaev_timeTopOGG)
+Dan_X.trop_timeTop.cor<-PWstageCor(Dan_timeTopOGG, Xtrop_timeTopOGG)
+
+Gal_Mus_timeTop.cor<-PWstageCor(Gal_timeTopOGG, Mus_timeTopOGG)
+Gal_X.laev_timeTop.cor<-PWstageCor(Gal_timeTopOGG, Xlaev_timeTopOGG)
+Gal_X.trop_timeTop.cor<-PWstageCor(Gal_timeTopOGG, Xtrop_timeTopOGG)
+
+X.laev_Mus_timeTop.cor<-PWstageCor(Xlaev_timeTopOGG,Mus_timeTopOGG)
+X.trop_Mus_timeTop.cor<-PWstageCor(Xtrop_timeTopOGG,Mus_timeTopOGG)
+
+X.laev_trop_timeTop.cor<-PWstageCor(Xlaev_timeTopOGG,Xtrop_timeTopOGG)
+
+
+```
+
+Generate a basic heat map for all PW above
+```{r} 
+#library("RColorBrewer")
+library("pheatmap")
+
+#create the breaks
+bk2 = unique(c(seq(0, 0.25, length=9), 
+               seq(0.251, 0.5, length=9), 
+               seq(0.51, 0.75, length=9),
+               seq(0.751, 1, length=9)))
+
+#set different color vectors for each interval
+col1 = colorRampPalette(c("white", "white"))(9) #set the order 
+col2 = colorRampPalette(c("white", 'mistyrose'))(9)
+col3 = colorRampPalette(c('mistyrose', 'pink'))(9)
+col4 = colorRampPalette(c("pink", "orangered3"))(9)
+colors2 <- c(col1, col2, col3, col4)
+
+pdf("AutoCor_AllvTopTime.pdf")
+pheatmap(Gal_Gal_timeTop.cor, 
+         cluster_rows = FALSE, 
+         cluster_cols = FALSE, 
+         color = colors2,
+         breaks = bk2, 
+         main = "Gallus Top Time")
+pheatmap(Gal_Gal.cor, 
+         cluster_rows = FALSE, 
+         cluster_cols = FALSE, 
+         color = colors2,
+         breaks = bk2, 
+         main = "Gallus All")
+
+pheatmap(Mus_Mus_timeTop.cor, 
+         cluster_rows = FALSE, 
+         cluster_cols = FALSE, 
+         color = colors2,
+         breaks = bk2, 
+         main = "Mus Top Time")
+pheatmap(Mus_Mus.cor, 
+         cluster_rows = FALSE, 
+         cluster_cols = FALSE, 
+         color = colors2,
+         breaks = bk2, 
+         main = "Mus All")
+
+pheatmap(Dan_Dan_timeTop.cor, 
+         cluster_rows = FALSE, 
+         cluster_cols = FALSE, 
+         color = colors2,
+         breaks = bk2, 
+         main = "Danio Top Time")
+pheatmap(Dan_Dan.cor, 
+         cluster_rows = FALSE, 
+         cluster_cols = FALSE, 
+         color = colors2,
+         breaks = bk2, 
+         main = "Danio All")
+
+pheatmap(Xlaev_Xlaev_timeTop.cor, 
+         cluster_rows = FALSE, 
+         cluster_cols = FALSE, 
+         color = colors2,
+         breaks = bk2, 
+         main = "Xlaev Top Time")
+pheatmap(Xlaev_Xlaev.cor, 
+         cluster_rows = FALSE, 
+         cluster_cols = FALSE, 
+         color = colors2,
+         breaks = bk2, 
+         main = "Xlaev All")
+
+pheatmap(Xtrop_Xtrop_timeTop.cor, 
+         cluster_rows = FALSE, 
+         cluster_cols = FALSE, 
+         color = colors2,
+         breaks = bk2, 
+         main = "Xtrop Top Time")
+pheatmap(Xtrop_Xtrop.cor, 
+         cluster_rows = FALSE, 
+         cluster_cols = FALSE, 
+         color = colors2,
+         breaks = bk2, 
+         main = "Xtrop All")
+dev.off()
+```
+
+Between Species Comparisons
+```{r}
+pheatmap(Dan_Gal_timeTop.cor, cluster_rows = FALSE, cluster_cols = FALSE)
+pheatmap(Dan_Gal.cor, cluster_rows = FALSE, cluster_cols = FALSE)
+
+
+
+pheatmap(Dan_Mus_timeTop.cor, cluster_rows = FALSE, cluster_cols = FALSE)
+pheatmap(Dan_Mus.cor, cluster_rows = FALSE, cluster_cols = FALSE)
+
+
+
+pheatmap(Dan_X.laev_timeTop.cor, cluster_rows = FALSE, cluster_cols = FALSE)
+pheatmap(Dan_X.laev.cor, cluster_rows = FALSE, cluster_cols = FALSE)
+
+
+
+pheatmap(Dan_X.trop_timeTop.cor, cluster_rows = FALSE, cluster_cols = FALSE)
+pheatmap(Dan_X.trop.cor, cluster_rows = FALSE, cluster_cols = FALSE)
+dev.off()
+
+
+pheatmap(Gal_Mus_timeTop.cor, cluster_rows = FALSE, cluster_cols = FALSE)
+pheatmap(Gal_Mus.cor, cluster_rows = FALSE, cluster_cols = FALSE)
+
+
+
+pheatmap(Gal_X.laev_timeTop.cor, cluster_rows = FALSE, cluster_cols = FALSE)
+pheatmap(Gal_X.laev.cor, cluster_rows = FALSE, cluster_cols = FALSE)
+
+
+
+pheatmap(Gal_X.trop_timeTop.cor, cluster_rows = FALSE, cluster_cols = FALSE)
+pheatmap(Gal_X.trop.cor, cluster_rows = FALSE, cluster_cols = FALSE)
+
+
+
+pheatmap(X.laev_Mus_timeTop.cor, cluster_rows = FALSE, cluster_cols = FALSE)
+pheatmap(X.laev_Mus.cor, cluster_rows = FALSE, cluster_cols = FALSE)
+
+
+
+pheatmap(X.trop_Mus_timeTop.cor, cluster_rows = FALSE, cluster_cols = FALSE)
+pheatmap(X.trop_Mus.cor, cluster_rows = FALSE, cluster_cols = FALSE)
+
+
+
+pheatmap(X.laev_trop_timeTop.cor, cluster_rows = FALSE, cluster_cols = FALSE)
+pheatmap(X.laev_trop.cor, cluster_rows = FALSE, cluster_cols = FALSE)
+
+

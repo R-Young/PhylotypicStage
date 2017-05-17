@@ -1,0 +1,523 @@
+---
+title: "OGGselection_CV_FC"
+author: "Becca"
+date: "Wednesday, November 30, 2016"
+output: html_document
+---
+
+This markdown contains code to identify OGGs that are interesting in embryogenesis. The metrics are: 
+max(|log2FC|)/percent of development
+
+max(|log2FC|) -- this is sensitive to inconsistent time steps (perhaps accounting for percent of development)
+cum(|log2FC|) -- may be sensitive to noise (but this is less problematic in OGGs as compaired to genes)
+CV -- this is time independent
+
+Note: need to remove 1 cell stage from mouse and danio (maternal transcripts) and any data 5 days or later in danio (outside of embryogenesis)
+
+```{r}
+library("plyr")
+library("dplyr")
+#may want to do this by cluster?
+#keep this in to test code as it is written
+#x=MusMeanBYclust5 
+#y=Mus_clusterID_time
+#k=5
+#p = 0.25 #percentage we want to select
+OGG_FCbyPercentDevo<- function (x,y,k,p) {
+  datalen=length(x[,1])
+  ratios<-x[1:datalen-1,]/x[2:datalen,]
+  ratios<-apply(ratios, 
+                c(1, 2), 
+                function(f) log(f,2))
+  clusNum=max(y[,k+2])
+  names<-paste(rep("clusterRatio", clusNum), 1:clusNum)
+  clusterRatio=names[1:clusNum-1]
+  row.names(ratios)<-clusterRatio
+  #focus=paste("k.",k, sep="")
+  percentTime = plyr::ddply(y, 
+                            .(k.5), 
+                            plyr::summarize, 
+                            meanPercent=mean(PercentTime))
+  percentTime<-percentTime[2:k,]-percentTime[1:k-1,]
+  percentTime<-percentTime[,2]
+  ratios<-apply(ratios, 2, function (q) q/percentTime)
+  #IMPORTANT: the value is no longer correct, could be abs! 
+  #This is just for selecting OGG with high max|FC|
+  maxFC<-data.frame(apply(ratios, 2, function (x) { (max(abs(x)))}))
+  colnames(maxFC)<-"maxFC"
+  maxFC<-cbind.data.frame(maxFC, OGG=row.names(maxFC))
+  #top p%
+  selected <-data.frame(maxFC[c(maxFC$maxFC >= quantile(maxFC$maxFC, probs = p):2),])
+  colnames(selected)<-c("max|log2FC|/%time", "OGG")
+  return(selected)
+}
+```
+
+```{r}
+library("plyr")
+library("dplyr")
+#may want to do this by cluster?
+#keep this in to test code as it is written
+#x=MusMeanBYclust5 
+#y=Mus_clusterID_time
+#k=5
+#p = 0.25 #percentage we want to select
+OGG_FCbyPercentDevo<- function (x,y,k,p) {
+  datalen=length(x[,1])
+  ratios<-x[1:datalen-1,]/x[2:datalen,]
+  ratios<-apply(ratios, 
+                c(1, 2), 
+                function(f) log(f,2))
+  clusNum=max(y[,k+2])
+  names<-paste(rep("clusterRatio", clusNum), 1:clusNum)
+  clusterRatio=names[1:clusNum-1]
+  row.names(ratios)<-clusterRatio
+  #focus=paste("k.",k, sep="")
+  percentTime = plyr::ddply(y, 
+                            .(k.5), 
+                            plyr::summarize, 
+                            meanPercent=mean(PercentTime))
+  percentTime<-percentTime[2:k,]-percentTime[1:k-1,]
+  percentTime<-percentTime[,2]
+  ratios<-apply(ratios, 2, function (q) q/percentTime)
+  #IMPORTANT: the value is no longer correct, could be abs! 
+  #This is just for selecting OGG with high max|FC|
+  maxFC<-data.frame(apply(ratios, 2, function (x) { (max(abs(x)))}))
+  colnames(maxFC)<-"maxFC"
+  maxFC<-cbind.data.frame(maxFC, OGG=row.names(maxFC))
+  #top p%
+  selected <-data.frame(maxFC[c(maxFC$maxFC >= quantile(maxFC$maxFC, probs = p):2),])
+  colnames(selected)<-c("max|log2FC|/%time", "OGG")
+  return(selected)
+}
+```
+```{r}
+#x=Gal.shared.OGG.exp #keep this in to test code as it is written
+#p = percentage we want to select
+OGG_maxFC<- function (x,p) {
+  datalen=length(x[,1])
+  ratios<-as.matrix(log(x[1:datalen-1,]/x[2:datalen,]),2)
+  names<-paste(rep("step", datalen), 1:datalen)
+  steps=names[1:datalen-1]
+  row.names(ratios)<-steps
+  #IMPORTANT: the value is no longer correct, could be abs! 
+  #This is just for selecting OGG with high max|FC|
+  maxFC<-data.frame(apply(ratios, 2, function (x) { (max(abs(x)))}))
+  colnames(maxFC)<-"maxFC"
+  maxFC<-cbind.data.frame(maxFC, OGG=row.names(maxFC))
+  #top p%
+  selected <-data.frame(maxFC[c(maxFC$maxFC >= quantile(maxFC$maxFC, probs = p):2),])
+  colnames(selected)<-c("max|log2FC|", "OGG")
+  y<-t(x)
+  y<-cbind.data.frame(y, OGG=row.names(y))
+  MaxFC_selected<-merge(y,selected, by="OGG")
+  row.names(MaxFC_selected)<-MaxFC_selected$OGG #put OGG names back as row names
+  MaxFC_selected<-MaxFC_selected[,-c(datalen+2)] #remove the OGG name column and the max|logFC| columns 
+  return(MaxFC_selected)
+  }
+
+OGG_cumFC<- function (x,p) {
+  datalen=length(x[,1])
+  ratios<-as.matrix(log(x[1:datalen-1,]/x[2:datalen,]),2)
+  names<-paste(rep("step", datalen), 1:datalen)
+  steps=names[1:datalen-1]
+  row.names(ratios)<-steps
+  #IMPORTANT: the value is no longer correct, could be abs! 
+  #This is just for selecting OGG with high max|FC|
+  cumFC<-data.frame(apply(ratios, 2, function (x) { (sum(abs(x)))}))
+  colnames(cumFC)<-"cumFC"
+  cumFC<-cbind.data.frame(cumFC, OGG=row.names(cumFC))
+  #top p%
+  selected <-data.frame(cumFC[c(cumFC$cumFC >= quantile(cumFC$cumFC, probs = p):2),])
+  colnames(selected)<-c("cum|log2FC|", "OGG")
+  y<-t(x)
+  y<-cbind.data.frame(y, OGG=row.names(y))
+  CumFC_selected<-merge(y,selected, by="OGG")
+  row.names(CumFC_selected)<-CumFC_selected$OGG #put OGG names back as row names
+  CumFC_selected<-CumFC_selected[,-c(datalen+2)] #remove the OGG name column and the max|logFC| columns
+  return(CumFC_selected)
+  }
+
+OGG_CV<- function (x,p) {
+  datalen=length(x[,1])
+  z<-t(x)
+  CV<-cbind.data.frame(z, CV=apply(z,1, function (y) var(y)/mean(y)))
+  selected <-data.frame(CV[c(CV$CV >= quantile(CV$CV, probs = .9):2),])
+  CV_selected=selected[,-c(datalen+1)]
+  CV_selected=cbind.data.frame(CV_selected,
+                               OGG=row.names(CV_selected))
+  CV_selected=CV_selected[,c(ncol(CV_selected),
+                             1:ncol(CV_selected)-1)]
+  return(CV_selected)
+  }
+```
+
+Implement the above, and merge among list within species. Remove 1cell stage in mus and danio and 5 days and after in danio
+```{r}
+Mus_MaxFC_PercentDev_OGG<-OGG_FCbyPercentDevo(MusMeanBYclust5, Mus_clusterID_time, 5, .9) #only works for k=5 right now
+Gal_MaxFC_PercentDev_OGG<-OGG_FCbyPercentDevo(GalMeanBYclust5, Gallus_clusterID_time, 5, .9) #only works 
+Xlaev_MaxFC_PercentDev_OGG<-OGG_FCbyPercentDevo(XlaevMeanBYclust5, Xlaev_clusterID_time, 5, .9) #only works 
+Xtrop_MaxFC_PercentDev_OGG<-OGG_FCbyPercentDevo(XtropMeanBYclust5, Xtrop_clusterID_time, 5, .9) #only 
+Dan_MaxFC_PercentDev_OGG<-OGG_FCbyPercentDevo(DanMeanBYclust5, Danio_clusterID_time, 5, .9) #only 
+
+All_MaxFC_PercentDev<-Reduce(function(dtf1, dtf2) merge(dtf1, 
+                                                        dtf2, 
+                                                        by = "OGG", 
+                                                        all = TRUE),
+                             list(Mus_MaxFC_PercentDev_OGG,
+                                  Gal_MaxFC_PercentDev_OGG, 
+                                  Xlaev_MaxFC_PercentDev_OGG, 
+                                  Xtrop_MaxFC_PercentDev_OGG,
+                                  Dan_MaxFC_PercentDev_OGG))
+
+All_MaxFC_PercentDev<-All_MaxFC_PercentDev[,1]
+
+Mus_MaxFC_PercentDev_OGG<-Mus.shared.OGG.exp[All_MaxFC_PercentDev]
+Mus_MaxFC_PercentDev_OGG<-Mus_MaxFC_PercentDev_OGG[c(1,5:19),]
+Gal_MaxFC_PercentDev_OGG<-Gal.shared.OGG.exp[All_MaxFC_PercentDev]
+Xlaev_MaxFC_PercentDev_OGG<-Xlaev.shared.OGG.exp[All_MaxFC_PercentDev]
+Xtrop_MaxFC_PercentDev_OGG<-Xtrop.shared.OGG.exp[All_MaxFC_PercentDev]
+Dan_MaxFC_PercentDev_OGG<-Dan.shared.OGG.exp[All_MaxFC_PercentDev]
+Dan_MaxFC_PercentDev_OGG<-Dan_MaxFC_PercentDev_OGG[2:11,]
+
+```
+The following analysis uses functions from MeanByCluster_OGG.Rmd
+```{r}
+MusMeanBYclust5_MaxFC_PercentDev<-SpeciesClustmeanWI(Mus_MaxFC_PercentDev_OGG,
+                                                     Mus_clusterID, 5)
+GalMeanBYclust5_MaxFC_PercentDev<-SpeciesClustmeanWI(Gal_MaxFC_PercentDev_OGG,
+                                                     Gallus_clusterID, 5)
+DanMeanBYclust5_MaxFC_PercentDev<-SpeciesClustmeanWI(Dan_MaxFC_PercentDev_OGG,
+                                                     Danio_clusterID, 5)
+XlaevMeanBYclust5_MaxFC_PercentDev<-SpeciesClustmeanWI(Xlaev_MaxFC_PercentDev_OGG,
+                                                       Xlaev_clusterID, 5)
+XtropMeanBYclust5_MaxFC_PercentDev<-SpeciesClustmeanWI(Xtrop_MaxFC_PercentDev_OGG,
+                                                       Xtrop_clusterID, 5)
+
+
+AllClustCor5_MaxFC_PercentDev<-rbind.data.frame(diag(
+  PWstageCor(MusMeanBYclust5_MaxFC_PercentDev,
+             GalMeanBYclust5_MaxFC_PercentDev)), 
+                 diag(PWstageCor(MusMeanBYclust5_MaxFC_PercentDev,
+                                 DanMeanBYclust5_MaxFC_PercentDev)),
+                 diag(PWstageCor(MusMeanBYclust5_MaxFC_PercentDev,
+                                 XlaevMeanBYclust5_MaxFC_PercentDev)),
+                 diag(PWstageCor(MusMeanBYclust5_MaxFC_PercentDev,
+                                 XtropMeanBYclust5_MaxFC_PercentDev)),
+                 diag(PWstageCor(GalMeanBYclust5_MaxFC_PercentDev,
+                                 DanMeanBYclust5_MaxFC_PercentDev)),
+                 diag(PWstageCor(GalMeanBYclust5_MaxFC_PercentDev,
+                                 XlaevMeanBYclust5_MaxFC_PercentDev)),
+                 diag(PWstageCor(GalMeanBYclust5_MaxFC_PercentDev,
+                                 XtropMeanBYclust5_MaxFC_PercentDev)),
+                 diag(PWstageCor(DanMeanBYclust5_MaxFC_PercentDev,
+                                 XlaevMeanBYclust5_MaxFC_PercentDev)),
+                 diag(PWstageCor(DanMeanBYclust5_MaxFC_PercentDev,
+                                 XtropMeanBYclust5_MaxFC_PercentDev)),
+                 diag(PWstageCor(XtropMeanBYclust5_MaxFC_PercentDev,
+                                 XlaevMeanBYclust5_MaxFC_PercentDev)))
+colnames(AllClustCor5_MaxFC_PercentDev)<-c("cluster1", 
+                                           "cluster2", 
+                                           "cluster3", 
+                                           "cluster4", 
+                                           "cluster5")
+rownames(AllClustCor5_MaxFC_PercentDev)<-c("MusGal", 
+                                           "MusDan", 
+                                           "MusXlaev", 
+                                           "MusXtrop", 
+                                           "GalDan",
+                                           "GalXlaev", 
+                                           "GalXtrop", 
+                                           "XlaevDan", 
+                                           "XtropDan", 
+                                           "XlaevXtrop")
+
+AllClustCor5_MaxFC_PercentDev_Nolaevis<-AllClustCor5_MaxFC_PercentDev[-c(3,6,8,10),]
+AllClustCor5_MaxFC_PercentDev_Notrop<-AllClustCor5_MaxFC_PercentDev[-c(4,7,9:10),]
+
+library("reshape2")
+library("ggplot2")
+box_RankCor_clust(AllClustCor5_MaxFC_PercentDev_Nolaevis)
+box_RankCor_clust(AllClustCor5_MaxFC_PercentDev_Notrop)
+box_RankCor_clust(AllClustCor5_MaxFC_PercentDev)
+```
+
+CV and fold change Rmarkdown
+```{r}
+Mus_MaxFC_OGG<-OGG_maxFC(Mus.shared.OGG.exp[c(1,5:19),], .9)
+Mus_CumFC_OGG<-OGG_cumFC(Mus.shared.OGG.exp[c(1,5:19),], .9)
+Mus_CV_OGG<-OGG_CV(Mus.shared.OGG.exp[c(1,5:19),], .9)
+
+Gal_MaxFC_OGG<-OGG_maxFC(Gal.shared.OGG.exp, .9)
+Gal_CumFC_OGG<-OGG_cumFC(Gal.shared.OGG.exp, .9)
+Gal_CV_OGG<-OGG_CV(Gal.shared.OGG.exp, .9)
+
+Xlaev_CV_OGG<-OGG_CV(Xlaev.shared.OGG.exp, .9)
+Xlaev_MaxFC_OGG<-OGG_maxFC(Xlaev.shared.OGG.exp, .9)
+colnames(Xlaev_MaxFC_OGG)<-colnames(Xlaev_CV_OGG)
+Xlaev_CumFC_OGG<-OGG_cumFC(Xlaev.shared.OGG.exp, .9)
+colnames(Xlaev_CumFC_OGG)<-colnames(Xlaev_CV_OGG)
+
+Xtrop_CV_OGG<-OGG_CV(Xtrop.shared.OGG.exp, .9)
+Xtrop_MaxFC_OGG<-OGG_maxFC(Xtrop.shared.OGG.exp, .9)
+colnames(Xtrop_MaxFC_OGG)<-colnames(Xtrop_CV_OGG)
+Xtrop_CumFC_OGG<-OGG_cumFC(Xtrop.shared.OGG.exp, .9)
+colnames(Xtrop_CumFC_OGG)<-colnames(Xtrop_CV_OGG)
+
+Dan_CV_OGG<-OGG_CV(Dan.shared.OGG.exp[2:11,], .9)
+Dan_MaxFC_OGG<-OGG_maxFC(Dan.shared.OGG.exp[2:11,], .9)
+colnames(Dan_MaxFC_OGG)<-colnames(Dan_CV_OGG)
+Dan_CumFC_OGG<-OGG_cumFC(Dan.shared.OGG.exp[2:11,], .9)
+colnames(Dan_CumFC_OGG)<-colnames(Dan_CV_OGG)
+
+```
+
+funtion that merges the output from max, cum, CV analysis to get the robust list of time genes
+```{r}
+TimeOGGsp = function(x,y,z,sp) {
+  combo=Reduce(function(x,y) {merge(x,y, all=TRUE)}, 
+              list(x, y, z))
+  row.names(combo)=combo$OGG
+  datalen=length(combo[,1])
+  #combo<-cbind.data.frame(combo, species=rep(sp,datalen))
+  all<-combo[,c(ncol(combo),1:ncol(combo)-1)]
+  #all=all[,-1]
+  #all=t(all)
+  return(combo)
+}
+
+Mus_TimeOGG<-TimeOGGsp(Mus_MaxFC_OGG,Mus_CumFC_OGG,Mus_CV_OGG, "mus")  
+Gal_TimeOGG<-TimeOGGsp(Gal_MaxFC_OGG,Gal_CumFC_OGG,Gal_CV_OGG, "gallus")  
+Xlaev_TimeOGG<-TimeOGGsp(Xlaev_MaxFC_OGG,Xlaev_CumFC_OGG,Xlaev_CV_OGG, "Xlaev") 
+Xtrop_TimeOGG<-TimeOGGsp(Xtrop_MaxFC_OGG,Xtrop_CumFC_OGG,Xtrop_CV_OGG, "Xtrop")
+Dan_TimeOGG<-TimeOGGsp(Dan_MaxFC_OGG,Dan_CumFC_OGG,Dan_CV_OGG, "danio")
+
+All_TimeOGG90<-Reduce(function(x,y) {merge(x,y, by='OGG', all=FALSE)}, 
+              list(Mus_TimeOGG, Gal_TimeOGG, 
+                   Xlaev_TimeOGG,Xtrop_TimeOGG,
+                   Dan_TimeOGG))
+
+All_TimeOGG90_ID<-as.data.frame(All_TimeOGG90$OGG)
+colnames(All_TimeOGG90_ID)<-"OGG"
+
+Mus.shareTime90<-merge(Mus_TimeOGG, All_TimeOGG90_ID, by="OGG", keep=FALSE)
+row.names(Mus.shareTime90)<-Mus.shareTime90$OGG
+Mus.shareTime90<-t(Mus.shareTime90[,-1])
+
+Gal.shareTime90<-merge(Gal_TimeOGG, All_TimeOGG90_ID, by="OGG", keep=FALSE)
+row.names(Gal.shareTime90)<-Gal.shareTime90$OGG
+Gal.shareTime90<-t(Gal.shareTime90[,-1])
+
+Dan.shareTime90<-merge(Dan_TimeOGG, All_TimeOGG90_ID, by="OGG", keep=FALSE)
+row.names(Dan.shareTime90)<-Dan.shareTime90$OGG
+Dan.shareTime90<-t(Dan.shareTime90[,-1])
+
+Xlaev.shareTime90<-merge(Xlaev_TimeOGG, All_TimeOGG90_ID, by="OGG", keep=FALSE)
+row.names(Xlaev.shareTime90)<-Xlaev.shareTime90$OGG
+Xlaev.shareTime90<-t(Xlaev.shareTime90[,-1])
+
+Xtrop.shareTime90<-merge(Xtrop_TimeOGG, All_TimeOGG90_ID, by="OGG", keep=FALSE)
+row.names(Xtrop.shareTime90)<-Xtrop.shareTime90$OGG
+Xtrop.shareTime90<-t(Xtrop.shareTime90[,-1])
+
+
+
+All_TimeOGG90incl<-Reduce(function(x,y) {merge(x,y, by='OGG', all=TRUE)}, 
+              list(Mus_TimeOGG, Gal_TimeOGG, 
+                   Xlaev_TimeOGG,Xtrop_TimeOGG,
+                   Dan_TimeOGG))
+
+```
+Plot the 10 ten of each or the combined. 
+```{r}
+library("ggplot2")
+library("reshape2")
+
+#x=t(Mus_CV_OGG[,-1])
+plot_topPercent<- function (x,nOGGs) {
+  datalen=length(x[,1])
+  ratios<-as.matrix(log(x[1:datalen-1,]/x[2:datalen,]),2)
+  names<-paste(rep("step", datalen), 1:datalen)
+  steps=names[1:datalen-1]
+  ratios<-data.frame(ratios[,sample(ncol(ratios),nOGGs)])
+  ratios<-t(ratios)
+  ratios<-cbind.data.frame(ratios, OGGs=row.names(ratios))
+  colnames(ratios)<-c(steps, 'OGGs')
+  levels(ratios)<-steps
+    ratios<-melt(ratios, id="OGGs")
+  colnames(ratios)<-c("OGGs", "steps", "Log2dExp")
+  y<-ggplot(ratios, aes(x = steps, y = Log2dExp, color=OGGs, group=OGGs)) +
+    geom_path() +
+    geom_point(size=2) +
+    scale_y_continuous(limits = c(-.75, .75)) +
+    theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(), 
+    legend.position='none')
+  return(y)}
+
+plot_topPercent(t(Mus_CV_OGG[,-1]))
+plot_topPercent(t(Mus_MaxFC_OGG[,-1]))
+plot_topPercent(t(Mus_CumFC_OGG[,-1]))
+
+plot_topPercent_exp<- function (x,nOGGs) {
+  #datalen=length(x[,1])
+  #ratios<-as.matrix(log(x[1:datalen-1,]/x[2:datalen,]),2)
+  #names<-paste(rep("step", datalen), 1:datalen)
+  steps=colnames(x[-1])
+  #ratios<-data.frame(ratios[,sample(ncol(ratios),nOGGs)])
+  #ratios<-t(ratios)
+  #ratios<-cbind.data.frame(ratios, OGGs=row.names(ratios))
+  #colnames(ratios)<-c(steps, 'OGGs')
+  x<-melt(x, id="OGG")
+  levels(x)<-steps
+  colnames(x)<-c("OGGs", "stage", "Expression")
+  y<-ggplot(x, aes(x = stage, y = Expression, color=OGGs, group=OGGs)) +
+    geom_path() +
+    geom_point(size=2) +
+    scale_y_continuous(limits = c(0, 15)) +
+    theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(), 
+    legend.position='none')
+  return(y)}
+
+
+
+
+
+```
+kmeans genes and plot
+```{r}
+x=Mus_MaxFC_OGG
+k=10
+#find the 'elbow' best number of k's
+plot_koptimum<- function (mydata,k,z) {
+  sp=z
+  wss <- (nrow(mydata)-1)*sum(apply(mydata,2,var))
+  for (i in 2:k) wss[i] <- sum(kmeans(mydata,
+                                       centers=i)$withinss)
+  y<-plot(1:k, wss, type="b", main=sp, xlab="Number of Clusters",
+     ylab="Within groups sum of squares")
+  return(y)}
+
+
+plot_kmeansALLOGG_Exp<- function (x,k) {
+  kclusters=kmeans(t(x),k)
+  numbers=kclusters$size
+  cluster.centers=t(data.frame(kclusters$center))
+  stages=row.names(x)
+  cluster.centers<-melt(cluster.centers, id="cluster")
+  colnames(cluster.centers)<-c("stage","cluster", "Expression")
+  cluster.centers$cluster<-as.factor(cluster.centers$cluster)
+  levels(cluster.centers$stage)<-stages
+  y<-ggplot(cluster.centers, 
+            aes(x = stage, y = Expression, 
+                color=cluster, group=cluster)) +
+    geom_path(size=2)+ 
+    geom_point(size=4) +
+    scale_y_continuous(limits = c(2, 15)) +
+    theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(), 
+    legend.position='none')
+    return(y)}
+
+
+plot_kmeansOGG_Exp<- function (x,k) {
+  kclusters=kmeans(x,k)
+  cluster.centers=t(data.frame(kclusters$center))
+  stages=x[,-1]
+  cluster.centers<-melt(cluster.centers, id="cluster")
+  colnames(cluster.centers)<-c("stage","cluster", "Expression")
+  cluster.centers$cluster<-as.factor(cluster.centers$cluster)
+  levels(cluster.centers$stage)<-stages
+  y<-ggplot(cluster.centers, 
+            aes(x = stage, y = Expression, color=cluster, group=cluster)) +
+    geom_path(size=2)+ 
+    geom_point(size=4) +
+    scale_y_continuous(limits = c(2, 12)) +
+    theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(), 
+    legend.position='none')
+    return(y)}
+
+plot_koptimum(t(Gal.shared.OGG.exp),15,"Gallus")
+plot_kmeansALLOGG_Exp(Gal.shared.OGG.exp,10)
+
+plot_koptimum(Gal_CV_OGG[,-1],15,"Gallus")
+plot_kmeansOGG_Exp(Gal_CV_OGG[,-1],10)
+
+plot_koptimum(Gal_MaxFC_OGG[,-1],15,"Gallus")
+plot_kmeansOGG_Exp(Gal_MaxFC_OGG[,-1],10)
+
+plot_koptimum(Gal_CumFC_OGG[,-1],15,"Gallus")
+plot_kmeansOGG_Exp(Gal_CumFC_OGG[,-1],10)
+
+plot_koptimum(Mus_CV_OGG[,-1],15,"Mus")
+plot_kmeansOGG_Exp(Mus_CV_OGG[,-1],10)
+
+plot_koptimum(Mus_MaxFC_OGG[,-1],15,"Mus")
+plot_kmeansOGG_Exp(Mus_MaxFC_OGG[,-1],10)
+
+plot_koptimum(Mus_CumFC_OGG[,-1],15,"Mus")
+plot_kmeansOGG_Exp(Mus_CumFC_OGG[,-1],10)
+
+#plot_koptimum(Dan_CV_OGG[,-1],12,"Danio")
+#plot_kmeansOGG_Exp(Dan_CV_OGG[,-1],7)
+
+#plot_koptimum(Dan_MaxFC_OGG[,-1],12,"Danio")
+#plot_kmeansOGG_Exp(Dan_MaxFC_OGG[,-1],7)
+
+#plot_koptimum(Dan_CumFC_OGG[,-1],12,"Danio")
+#plot_kmeansOGG_Exp(Dan_CumFC_OGG[,-1],7)
+
+
+
+
+
+#kmeans of ratios (not as informative)
+plot_kmeansOGG<- function (x,k) {
+  kclusters=kmeans(x[,-1],k)
+  cluster.centers=t(data.frame(kclusters$center))
+  datalen=length(cluster.centers[,1])
+  ratios<-as.matrix(log(cluster.centers[1:datalen-1,]/cluster.centers[2:datalen,]),2)
+  names<-paste(rep("step", datalen), 1:datalen)
+  steps=names[1:datalen-1]
+  ratios<-t(ratios)
+  ratios<-cbind.data.frame(ratios, cluster=row.names(ratios))
+  colnames(ratios)<-c(steps, 'cluster')
+  levels(ratios)<-steps
+    ratios<-melt(ratios, id="cluster")
+  colnames(ratios)<-c("cluster", "steps", "Log2dExp")
+  y<-ggplot(ratios, aes(x = steps, 
+                        y = Log2dExp, 
+                        color=cluster, 
+                        group=cluster)) +
+    geom_path() +
+    geom_point(size=2) +
+    scale_y_continuous(limits = c(-.5, .5)) +
+    theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(), 
+    legend.position='none')
+  return(y)}
+
+
+
+
+
+
+```
+

@@ -1,0 +1,59 @@
+---
+title: "IndependentContrasts"
+author: "Becca"
+date: "May 16, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This R Markdown document is meant to develop independent contrast approach to analyzing the interspecific microarray data through embryogenesis -- to investigate whether an hourglass in gene expression similarity is present. Attempting two approaches. One is at the OGG level (1), the second is at the phylogenetic node level (2). I am not as keen on (2), even more averaging!
+
+(1)abs(OGG by cluster RANK #sp1ornode1 - OGG by cluster RANK #sp2 or node2)/sum(branch lengths)
+NOTES: species OGG expression mean by cluster comes from:
+\All_projects\Phylotypic Stage\R\PhylotypicStage\MeanByCluster_OGG.Rmd
+
+```{r, establishing datasets for pairwise comparisons}
+#generate species by cluster RANKs for all OGGs
+# "-" on the matrix gives descending order, highest rank lowest expression
+MusOGGRank_clust5<-data.frame(t(apply(-MusMeanBYclust5, 1, rank))) 
+GalOGGRank_clust5<-data.frame(t(apply(-GalMeanBYclust5, 1, rank))) 
+XlaevOGGRank_clust5<-data.frame(t(apply(-XlaevMeanBYclust5, 1, rank))) 
+XtropOGGRank_clust5<-data.frame(t(apply(-XtropMeanBYclust5, 1, rank))) 
+DanOGGRank_clust5<-data.frame(t(apply(-DanMeanBYclust5, 1, rank))) 
+
+#For each node look at the difference in OGG rank correct by summed branch lengths:
+#abs(RANKsp1-RANKsp2)/(branch length 1 + branch length 2)
+#branch length are median time estimates from 
+AmnioteOGGRank_clust5<-(abs(MusOGGRank_clust5 - 
+                          GalOGGRank_clust5))/(320+320)
+FrogOGGRank_clust5<-(abs(XlaevOGGRank_clust5 - 
+                       XtropOGGRank_clust5))/(52+52)
+
+#for internal node comparisons we need a weighted average()
+#AnamnioteOGGRank_clust5<-MusOGGRank_clust5*(1/)
+ #                             FrogOGGRank_clust5))/((353-320)+
+  #                                                  (353-52))
+#AnamnioteOGGRank_clust5<-(abs(AmnioteOGGRank_clust5 -
+#                              FrogOGGRank_clust5))/((353-320)+
+ #                                                   (353-52))
+
+```
+
+
+```{r}
+
+```
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

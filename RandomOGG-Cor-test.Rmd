@@ -1,0 +1,294 @@
+---
+title: "RandomOGGs_TimeComps"
+author: "Becca"
+date: "Friday, November 04, 2016"
+output: html_document
+---
+
+Draw subset of OGGs and PW correlation function
+========================================
+Function that randomly draws OGGs, calculates all PW correlations stages within species (Spearmans), generates a list of dfs with mean, var, and sd of the PW correlations where:
+  x = dataframe of expression in all OGGs (or genes)
+  R = number of times you want to resample
+  TT = number of OGGs (or genes) you want to sample
+
+```{r}
+TimeCor_RandomSubSample<- function (x, R, TT) {
+  y=rep(list(x),R) #replicate the orginal data frame R times
+  #sample OGGs from each listed data frame
+  random_OGGs <- lapply(y, function(x) x[,sample(ncol(x),TT)]) 
+  #correlation in gene expression in all pairwise time points (spearman); 
+  #need to transpose the dataframes. 
+  random_corSpearman<-lapply(random_OGGs, function(x) cor(t(x),
+       t(x),
+       use="pairwise.complete.obs", 
+       method="spearman") )
+  #change from a list of dfs to an array
+  randomCorArray<-simplify2array(random_corSpearman)
+  #calucluate the mean, variance, etc for each cell (1:2)
+  #note this can be done by row (1) or column (2)
+  x1<-apply(randomCorArray, 
+                 1:2,
+                 mean)
+  x2<-apply(randomCorArray, 
+                1:2, 
+                var)
+  x3<-apply(randomCorArray, 
+                 1:2, 
+                 sd)
+  return(list('mean'=x1,'var'=x2,'sd'=x3))
+  }
+```
+Apply the function to ...shared.OGG.exp for each lineage. 
+```{r}
+Gal_RandomSubSamp<-TimeCor_RandomSubSample(Gal.shared.OGG.exp, 1000, 204)
+#Gal_DiffTT_Random<-(Gal_Gal_timeTop.cor-Gal_RandomSubSamp$mean/Gal_RandomSubSamp$sd)
+
+Mus_RandomSubSamp<-TimeCor_RandomSubSample(Mus.shared.OGG.exp, 1000, 204)
+#Mus_DiffTT_Random<-(Mus_Mus_timeTop.cor-Mus_RandomSubSamp$mean/Mus_RandomSubSamp$sd)
+
+Dan_RandomSubSamp<-TimeCor_RandomSubSample(Dan.shared.OGG.exp, 1000, 204)
+Xlaev_RandomSubSamp<-TimeCor_RandomSubSample(Xlaev.shared.OGG.exp, 1000, 204)
+Xtrop_RandomSubSamp<-TimeCor_RandomSubSample(Xtrop.shared.OGG.exp, 1000, 204)
+
+```
+Plot a heatmap of the random correlations
+Plot a heatmap of the number of standard deviations the Top Time correlations are from the randomly generated mean 
+```{r}
+Generate a basic heat map for all PW above
+```{r} 
+#library("RColorBrewer")
+library("pheatmap")
+
+#create the breaks
+bk2 = unique(c(seq(0, 0.25, length=9), 
+               seq(0.251, 0.5, length=9), 
+               seq(0.51, 0.75, length=9),
+               seq(0.751, 1, length=9)))
+
+#set different color vectors for each interval
+col1 = colorRampPalette(c("white", "white"))(9) #set the order 
+col2 = colorRampPalette(c("white", 'mistyrose'))(9)
+col3 = colorRampPalette(c('mistyrose', 'pink'))(9)
+col4 = colorRampPalette(c("pink", "orangered3"))(9)
+colors2 <- c(col1, col2, col3, col4)
+
+pdf("AutoCor_AllvTopTime.pdf")
+pheatmap(Gal_Gal_timeTop.cor, 
+         cluster_rows = FALSE, 
+         cluster_cols = FALSE, 
+         color = colors2,
+         breaks = bk2, 
+         main = "Gallus Top Time")
+pheatmap(Gal_RandomSubSamp$mean, 
+         cluster_rows = FALSE, 
+         cluster_cols = FALSE, 
+         color = colors2,
+         breaks = bk2, 
+         main = "Gallus Random")
+pheatmap(Gal_Gal.cor, 
+         cluster_rows = FALSE, 
+         cluster_cols = FALSE, 
+         color = colors2,
+         breaks = bk2, 
+         main = "Gallus All")
+
+
+pheatmap(Mus_Mus_timeTop.cor, 
+         cluster_rows = FALSE, 
+         cluster_cols = FALSE, 
+         color = colors2,
+         breaks = bk2, 
+         main = "Mus Top Time")
+pheatmap(Mus_RandomSubSamp$mean, 
+         cluster_rows = FALSE, 
+         cluster_cols = FALSE, 
+         color = colors2,
+         breaks = bk2, 
+         main = "Mus Random")
+pheatmap(Mus_Mus.cor, 
+         cluster_rows = FALSE, 
+         cluster_cols = FALSE, 
+         color = colors2,
+         breaks = bk2, 
+         main = "Mus All")
+
+pheatmap(Dan_Dan_timeTop.cor, 
+         cluster_rows = FALSE, 
+         cluster_cols = FALSE, 
+         color = colors2,
+         breaks = bk2, 
+         main = "Danio Top Time")
+pheatmap(Dan_RandomSubSamp$mean, 
+         cluster_rows = FALSE, 
+         cluster_cols = FALSE, 
+         color = colors2,
+         breaks = bk2, 
+         main = "Danio Random")
+pheatmap(Dan_Dan.cor, 
+         cluster_rows = FALSE, 
+         cluster_cols = FALSE, 
+         color = colors2,
+         breaks = bk2, 
+         main = "Danio All")
+
+pheatmap(Xlaev_Xlaev_timeTop.cor, 
+         cluster_rows = FALSE, 
+         cluster_cols = FALSE, 
+         color = colors2,
+         breaks = bk2, 
+         main = "Xlaev Top Time")
+pheatmap(Xlaev_RandomSubSamp$mean, 
+         cluster_rows = FALSE, 
+         cluster_cols = FALSE, 
+         color = colors2,
+         breaks = bk2, 
+         main = "X. laevis Random")
+pheatmap(Xlaev_Xlaev.cor, 
+         cluster_rows = FALSE, 
+         cluster_cols = FALSE, 
+         color = colors2,
+         breaks = bk2, 
+         main = "Xlaev All")
+
+pheatmap(Xtrop_Xtrop_timeTop.cor, 
+         cluster_rows = FALSE, 
+         cluster_cols = FALSE, 
+         color = colors2,
+         breaks = bk2, 
+         main = "Xtrop Top Time")
+pheatmap(Xtrop_RandomSubSamp$mean, 
+         cluster_rows = FALSE, 
+         cluster_cols = FALSE, 
+         color = colors2,
+         breaks = bk2, 
+         main = "X. tropicalis Random")
+pheatmap(Xtrop_Xtrop.cor, 
+         cluster_rows = FALSE, 
+         cluster_cols = FALSE, 
+         color = colors2,
+         breaks = bk2, 
+         main = "Xtrop All")
+dev.off()
+```
+
+calculates a ratio of expression for each time step, randomly samples OGGs, rbinds the replicated data sets into one data frame with "timeStep" and "Expression Ratio" the data set into columns: 
+
+
+```{r}
+#x=Gal.shared.OGG.exp #for testing function steps
+#### do all the ratio calculation before generating the list of df!!!!!
+
+OGGslopes_RandomSubSamp<- function (x, R, TT) {
+  datalen=length(x[,1]) #how many stages are we comparing
+  names<-paste(rep("step", datalen), 1:datalen)
+  row.names(x)<-names
+  steps=names[1:datalen-1]
+  ratios<-as.matrix(log(x[1:datalen-1,]/x[2:datalen,]),2)
+  colnames(ratios)<-NULL #remove OGG name
+  #ratios<-cbind.data.frame(ratios, steps=row.names(ratios))
+  y=rep(list(ratios),R) #replicate ratios data into a list of  R dfs
+  #sample TT OGG ratios from each listed data frame
+  random_OGGs <- lapply(y, function(x) data.frame(x[,sample(ncol(x),TT)]))
+  #t_ratios<-lapply(random_OGGs, function(x) data.frame(t(x)))
+  #ratios<-lapply(t_ratios, function(x) data.frame(apply(x, 2, mean)))
+  Randratios<-do.call('rbind', random_OGGs)
+  Randratios<-cbind.data.frame(Randratios, steps=rep(steps, R))
+  Randratios<-cbind.data.frame(Randratios, interation=rep(1:length(steps), each=10))
+  colnames(Randratios)<-c(paste(rep("ratio", TT), 1:TT),"timeStep", "iteration")
+  levels(Randratios$timeStep)<-steps
+  row.names(Randratios)<-NULL
+    return((Randratios))
+  }
+
+```
+permutation of random OGG selection.   
+x = dataframe of expression in all OGGs (or genes)
+  R = number of times you want to resample
+  TT = number of OGGs (or genes) you want to sample
+```{r}
+#library(data.table)
+
+Gal_RandomSubSlope<-OGGslopes_RandomSubSamp(Gal.shared.OGG.exp, 1000, 204)
+
+
+```
+
+```{r}
+#x=Gal_RandomSubSlope
+library("reshape2")
+library("ggplot2")
+OGGRandomslopes_Plot<-   function (x) {
+  y<-ggplot(x, aes(x = timeStep, y = ExpRatio, color=iteration, group=iteration)) +
+    geom_path() +
+    geom_point(size=2) +
+    theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(), 
+    legend.position='none')
+  return(y)}
+
+
+#x=Gal_timeTopOGG
+#nOGGs = number of OGGs you want to sample and plot
+OGGslopes_Plot<- function (x,nOGGs) {
+  datalen=length(x[,1])
+  ratios<-as.matrix(log(x[1:datalen-1,]/x[2:datalen,]),2)
+  names<-paste(rep("step", datalen), 1:datalen)
+  steps=names[1:datalen-1]
+  ratios<-data.frame(ratios[,sample(ncol(ratios),nOGGs)])
+  ratios<-t(ratios)
+  ratios<-cbind.data.frame(ratios, OGGs=row.names(ratios))
+  colnames(ratios)<-c(steps, 'OGGs')
+  levels(ratios)<-steps
+    ratios<-melt(ratios, id="OGGs")
+  colnames(ratios)<-c("OGGs", "steps", "Log2dExp")
+  y<-ggplot(ratios, aes(x = steps, y = Log2dExp, color=OGGs, group=OGGs)) +
+    geom_path() +
+    geom_point(size=2) +
+    scale_y_continuous(limits = c(-1, 1)) +
+    theme(axis.line = element_line(colour = "black"),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(), 
+    legend.position='none')
+  return(y)}
+  
+```
+
+```{r}
+pdf("allRandomSlopes.pdf")
+OGGslopes_Plot(Gal_RandomSubSlope)
+OGGslopes_Plot(Mus_RandomSubSamp[,-c(1,4)]) #stage 1 is so different (maternal transcripts); not sure what is wrong with step 4 - stages from other data set perhaps?
+OGGslopes_Plot(Dan_RandomSubSamp[,-c(1,14)])
+OGGslopes_Plot(Xlaev_RandomSubSamp)
+OGGslopes_Plot(Xtrop_RandomSubSamp)
+dev.off()
+
+```
+
+```{r}
+library("reshape2")
+library("ggplot2")
+
+#pdf("allTopTimeSlopes.pdf")
+OGGslopes_Plot(Gal.shared.OGG.exp,204)
+OGGslopes_Plot(Gal_timeTopOGG,204)
+
+OGGslopes_Plot(Mus.shared.OGG.exp,204)
+OGGslopes_Plot(Mus_timeTopOGG,204)
+
+OGGslopes_Plot(Dan.shared.OGG.exp,204)
+OGGslopes_Plot(Dan_timeTopOGG)
+
+OGGslopes_Plot(Xlaev.shared.OGG.exp,204)
+OGGslopes_Plot(Xlaev_timeTopOGG)
+
+OGGslopes_Plot(Xtrop.shared.OGG.exp,204)
+OGGslopes_Plot(Xtrop_timeTopOGG)
+#dev.off()
+
+

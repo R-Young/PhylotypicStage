@@ -1,0 +1,258 @@
+---
+title: "KeyDevGenes_compare"
+author: "Becca"
+date: "December 6, 2016"
+output: html_document
+---
+
+This markdown takes microarray expression data for pulls our the key genes. Then looks at expression variability in those genes  as part of a test for the developmental hourglass in gene expression
+1. Make the data sets to compare
+```{r}
+#gnerate key dev gene expression sets
+library("plyr")
+x<-t(drer.all.stages)
+x<-cbind.data.frame(x, 'dan'=row.names(x))
+DanKeyDev<-unique(merge(KeyDevGenes_orthology[,c(2,5)], x, by='dan'))
+DanKeyDev<- ddply(data.frame(DanKeyDev),  "symbol", numcolwise(mean)) #take a mean is more that one gene id has same symbol
+row.names(DanKeyDev)<-DanKeyDev$symbol
+
+x<-t(mmus.all.stages.3)
+x<-cbind.data.frame(x, 'mus'=row.names(x))
+MusKeyDev<-unique(merge(KeyDevGenes_orthology[,c(2,6)], x, by='mus'))
+MusKeyDev<- ddply(data.frame(MusKeyDev),  "symbol", numcolwise(mean))
+row.names(MusKeyDev)<-MusKeyDev$symbol
+
+x<-t(ggal.all.stages)
+x<-cbind.data.frame(x, 'gal'=row.names(x))
+GalKeyDev<-unique(merge(KeyDevGenes_orthology[,c(2,3)], x, by='gal'))
+GalKeyDev<- ddply(data.frame(GalKeyDev),  "symbol", numcolwise(mean))
+row.names(GalKeyDev)<-GalKeyDev$symbol
+
+x<-t(xlaev.all.stages)
+x<-cbind.data.frame(x, 'xlaev'=row.names(x))
+XlaevKeyDev<-unique(merge(KeyDevGenes_orthology[,c(2,4)], x, by='xlaev'))
+XlaevKeyDev<- ddply(data.frame(XlaevKeyDev),  "symbol", numcolwise(mean))
+row.names(XlaevKeyDev)<-XlaevKeyDev$symbol
+
+x<-t(xtrop.all.stages)
+x<-cbind.data.frame(x, 'xtrop'=row.names(x))
+XtropKeyDev<-unique(merge(KeyDevGenes_orthology[,c(2,7)], x, by='xtrop'))
+XtropKeyDev<- ddply(data.frame(XtropKeyDev),  "symbol", numcolwise(mean))
+row.names(XtropKeyDev)<-XtropKeyDev$symbol
+
+SharedKeyDeveGenes<-Reduce(function(x,y) {merge(x,y, by="symbol")}, 
+                           list(DanKeyDev, MusKeyDev,
+                                GalKeyDev, XlaevKeyDev,
+                                XtropKeyDev))
+
+DanKeyDev.shared<-merge(data.frame(SharedKeyDeveGenes[,c(1,20)]), 
+                        DanKeyDev, by='symbol')
+row.names(DanKeyDev.shared)<-DanKeyDev.shared$symbol
+DanKeyDev.shared<-t(DanKeyDev.shared[,-c(1:2)])
+
+MusKeyDev.shared<-merge(data.frame(SharedKeyDeveGenes[,c(1,2)]), 
+                        MusKeyDev, by='symbol')
+row.names(MusKeyDev.shared)<-MusKeyDev.shared$symbol
+MusKeyDev.shared<-t(MusKeyDev.shared[,-c(1:2)])
+
+GalKeyDev.shared<-merge(data.frame(SharedKeyDeveGenes[,c(1,2)]), 
+                        GalKeyDev, by='symbol')
+row.names(GalKeyDev.shared)<-GalKeyDev.shared$symbol
+GalKeyDev.shared<-t(GalKeyDev.shared[,-c(1:2)])
+
+XlaevKeyDev.shared<-merge(data.frame(SharedKeyDeveGenes[,c(1,2)]), 
+                        XlaevKeyDev, by='symbol')
+row.names(XlaevKeyDev.shared)<-XlaevKeyDev.shared$symbol
+XlaevKeyDev.shared<-t(XlaevKeyDev.shared[,-c(1:2)])
+
+XtropKeyDev.shared<-merge(data.frame(SharedKeyDeveGenes[,c(1,2)]), 
+                        XtropKeyDev, by='symbol')
+row.names(XtropKeyDev.shared)<-XtropKeyDev.shared$symbol
+XtropKeyDev.shared<-t(XtropKeyDev.shared[,-c(1:2)])
+```
+Function writen (KstageVarianceCompare.Rmd)
+For K's 3 to 6 run stageClustVarWI and stageClustVarAS and rbind them
+"...ClusterID" dfs are generated using kmeans_ALLOGGs_stages function in (Kmeans_Stages.Rmd)
+Genes selected are "Key Developmental"
+```{r}
+stageVark3KeyWI<-stageClustVarWI(MusKeyDev.shared, Mus_clusterID, 
+                                             GalKeyDev.shared, Gallus_clusterID,
+                                             DanKeyDev.shared, Danio_clusterID, 
+                                             XlaevKeyDev.shared, Xlaev_clusterID, 
+                                             XtropKeyDev.shared, Xtrop_clusterID, 
+                                             3, "Mus", "Gallus", "Danio", "Xlaev", "Xtrop")
+stageVark3KeyWI[is.na(stageVark3KeyWI)] <- 0 #if a cluster has only one stage the variance is 0
+
+stageVark4KeyWI<-stageClustVarWI(MusKeyDev.shared, Mus_clusterID, 
+                                             GalKeyDev.shared, Gallus_clusterID,
+                                             DanKeyDev.shared, Danio_clusterID, 
+                                             XlaevKeyDev.shared, Xlaev_clusterID, 
+                                             XtropKeyDev.shared, Xtrop_clusterID, 
+                                             4, "Mus", "Gallus", "Danio", "Xlaev", "Xtrop")
+stageVark4KeyWI[is.na(stageVark4KeyWI)] <- 0 #if a cluster has only one stage the variance is 0
+
+stageVark5KeyWI<-stageClustVarWI(MusKeyDev.shared, Mus_clusterID, 
+                                             GalKeyDev.shared, Gallus_clusterID,
+                                             DanKeyDev.shared, Danio_clusterID, 
+                                             XlaevKeyDev.shared, Xlaev_clusterID, 
+                                             XtropKeyDev.shared, Xtrop_clusterID, 
+                                             5, "Mus", "Gallus", "Danio", "Xlaev", "Xtrop")
+stageVark5KeyWI[is.na(stageVark5KeyWI)] <- 0 #if a cluster has only one stage the variance is 0
+
+stageVark6KeyWI<-stageClustVarWI(MusKeyDev.shared, Mus_clusterID, 
+                                             GalKeyDev.shared, Gallus_clusterID,
+                                             DanKeyDev.shared, Danio_clusterID, 
+                                             XlaevKeyDev.shared, Xlaev_clusterID, 
+                                             XtropKeyDev.shared, Xtrop_clusterID, 
+                                             6, "Mus", "Gallus", "Danio", "Xlaev", "Xtrop")
+stageVark6KeyWI[is.na(stageVark6KeyWI)] <- 0 #if a cluster has only one stage the variance is 0
+                               
+stageVark3KeyAS<-stageClustVarAS(MusKeyDev.shared, Mus_clusterID, 
+                                             GalKeyDev.shared, Gallus_clusterID,
+                                             DanKeyDev.shared, Danio_clusterID, 
+                                             XlaevKeyDev.shared, Xlaev_clusterID, 
+                                             XtropKeyDev.shared, Xtrop_clusterID,3)
+
+stageVark4KeyAS<-stageClustVarAS(MusKeyDev.shared, Mus_clusterID, 
+                                             GalKeyDev.shared, Gallus_clusterID,
+                                             DanKeyDev.shared, Danio_clusterID, 
+                                             XlaevKeyDev.shared, Xlaev_clusterID, 
+                                             XtropKeyDev.shared, Xtrop_clusterID,4)
+
+stageVark5KeyAS<-stageClustVarAS(MusKeyDev.shared, Mus_clusterID, 
+                                             GalKeyDev.shared, Gallus_clusterID,
+                                             DanKeyDev.shared, Danio_clusterID, 
+                                             XlaevKeyDev.shared, Xlaev_clusterID, 
+                                             XtropKeyDev.shared, Xtrop_clusterID,5)
+
+stageVark6KeyAS<-stageClustVarAS(MusKeyDev.shared, Mus_clusterID, 
+                                             GalKeyDev.shared, Gallus_clusterID,
+                                             DanKeyDev.shared, Danio_clusterID, 
+                                             XlaevKeyDev.shared, Xlaev_clusterID, 
+                                             XtropKeyDev.shared, Xtrop_clusterID,6)
+
+```
+Function writen (KstageVarianceCompare.Rmd). Intra vs. Interspecific Variation
+```{r}
+library("reshape2")
+library("ggplot2")
+scatterWIonAS(stageVark3KeyWI, stageVark3KeyAS,1,5)
+scatterWIonAS(stageVark3KeyWI, stageVark3KeyAS,2,5)
+scatterWIonAS(stageVark3KeyWI, stageVark3KeyAS,3,5)
+
+scatterWIonAS(stageVark4KeyWI, stageVark4KeyAS,1,5)
+scatterWIonAS(stageVark4KeyWI, stageVark4KeyAS,2,5)
+scatterWIonAS(stageVark4KeyWI, stageVark4KeyAS,3,5)
+scatterWIonAS(stageVark4KeyWI, stageVark4KeyAS,4,5)
+
+scatterWIonAS(stageVark5WI90, stageVark5AS90,1,5)
+scatterWIonAS(stageVark5WI90, stageVark5AS90,2,5)
+scatterWIonAS(stageVark5WI90, stageVark5AS90,3,5)
+scatterWIonAS(stageVark5WI90, stageVark5AS90,4,5)
+scatterWIonAS(stageVark5WI90, stageVark5AS90,5,5)
+
+
+```
+Function writen (KstageVarianceCompare.Rmd). Interspecific Variation across clusters
+```{r}
+library("reshape2")
+library("ggplot2")
+pdf("KeyDev_clusterBoxPlot.pdf")
+boxAS(stageVark3KeyAS)
+boxAS(stageVark4KeyAS)
+boxAS(stageVark5KeyAS)
+boxAS(stageVark6KeyAS)
+dev.off()
+```
+Group stages by cluster
+```{r}
+
+
+SpeciesClustersMeans<-function(a, a1, b, b1, c, c1, 
+                        d, d1, e, e1, k, spA, 
+                        spB, spC, spD, spE){
+
+a1<-a1[,c(1,2,k+1)]
+colnames(a1)=c("species", "timepoint", "k")
+a=cbind.data.frame(a, 'timepoint'=a1$timepoint)
+ak=merge(a1, a, by='timepoint', all=FALSE)
+ak=ak[,-c(1:2)]
+ak1= ddply(ak, "k", numcolwise(mean))
+ak1<-cbind.data.frame(ak1, "species"=rep(spA, k))
+ak1=ak1[,c(ncol(ak1),1:ncol(ak1)-1)]
+row.names(ak1)<-ak1$timepoint
+#ak1=ak1[,-c(1)]
+
+b1<-b1[,c(1,2,k+1)]
+colnames(b1)=c("species", "timepoint", "k")
+b=cbind.data.frame(b, 'timepoint'=b1$timepoint)
+bk=merge(b1, b,by='timepoint', all=FALSE)
+bk=bk[,-c(1:2)]
+bk1= ddply(bk, "k", numcolwise(mean))
+bk1<-cbind.data.frame(bk1, "species"=rep(spB, k))
+bk1=bk1[,c(ncol(bk1),1:ncol(bk1)-1)]
+row.names(bk1)<-bk1$timepoint
+#bk1=bk1[,-c(1)]
+
+c1<-c1[,c(1,2,k+1)]
+colnames(c1)=c("species", "timepoint", "k")
+c=cbind.data.frame(c, 'timepoint'=c1$timepoint)
+ck=merge(c1, c,by='timepoint', all=FALSE)
+ck=ck[,-c(1:2)]
+ck1= ddply(ck, "k", numcolwise(mean))
+ck1<-cbind.data.frame(ck1, "species"=rep(spC, k))
+ck1=ck1[,c(ncol(ck1),1:ncol(ck1)-1)]
+row.names(ck1)<-ck1$timepoint
+#ck1=ck1[,-c(1)]
+
+d1=d1[,c(1,2,k+1)]
+colnames(d1)=c("species", "timepoint", "k")
+d=cbind.data.frame(d, 'timepoint'=d1$timepoint)
+dk=merge(d1, d,by='timepoint', all=FALSE)
+dk=dk[,-c(1:2)]
+dk1= ddply(dk, "k", numcolwise(mean))
+dk1<-cbind.data.frame(dk1, "species"=rep(spD, k))
+dk1=dk1[,c(ncol(dk1),1:ncol(dk1)-1)]
+row.names(dk1)<-dk1$timepoint
+#dk1=dk1[,-c(1)]
+
+e1=e1[,c(1,2,k+1)]
+colnames(e1)=c("species", "timepoint", "k")
+e=cbind.data.frame(e, timepoint=e1$timepoint)
+ek=merge(e1, e,by='timepoint', all=FALSE)
+ek=ek[,-c(1:2)]
+ek1= ddply(ek, "k", numcolwise(mean))
+ek1<-cbind.data.frame(ek1, "species"=rep(spE, k))
+ek1=ek1[,c(ncol(ek1),1:ncol(ek1)-1)]
+row.names(ek1)<-ek1$timepoint
+#ek1=ek1[,-c(1)]
+all=rbind.data.frame(ak1, bk1, ck1, dk1, ek1)
+return(all)
+}
+
+clusterMean_keyDevk3WI<-SpeciesClustersMeans(MusKeyDev.shared[-c(2:4),], Mus_clusterID, 
+                                             GalKeyDev.shared, Gallus_clusterID,
+                                             DanKeyDev.shared[c(2:11),], Danio_clusterID, 
+                                             XlaevKeyDev.shared, Xlaev_clusterID, 
+                                             XtropKeyDev.shared, Xtrop_clusterID, 
+                                             3, "Mus", "Gallus", "Danio", "Xlaev", "Xtrop")
+
+
+```
+compute all pairwise correlaton, impliment for key dev genes
+PWstageCor function from AllPWcor.Rmd
+```{r}
+Dan_Gal.keydevK4cor<-PWstageCor(DanioKeyDev_4cluster, GallusKeyDev_4cluster)
+Dan_Mus.keydevK4cor<-PWstageCor(DanioKeyDev_4cluster, MusKeyDev_4cluster)
+Dan_X.laev.keydev4cor<-PWstageCor(DanioKeyDev_4cluster, XlaevKeyDev.shared)
+Dan_X.trop.keydev4cor<-PWstageCor(DanioKeyDev_4cluster, XtropKeyDev.shared)
+
+Gal_Mus.keydevcor<-PWstageCor(GalKeyDev.shared, Mus.shared.OGG.exp)
+Gal_X.laev.keydevcor<-PWstageCor(GalKeyDev.shared, XlaevKeyDev.shared)
+Gal_X.trop.keydevcor<-PWstageCor(GalKeyDev.shared, XtropKeyDev.shared)
+
+X.laev_Mus.keydevcor<-PWstageCor(XlaevKeyDev.shared,Mus.shared.OGG.exp)
+X.trop_Mus.keydevcor<-PWstageCor(XtropKeyDev.shared,Mus.shared.OGG.exp)
+
+X.laev_trop.keydevcor<-PWstageCor(XlaevKeyDev.shared,XtropKeyDev.shared)
+```

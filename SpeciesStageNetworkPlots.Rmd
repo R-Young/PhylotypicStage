@@ -1,0 +1,79 @@
+---
+title: "NETWORK: Pairwise Species Correlations "
+output: html_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+Pairwise Species Networks (Blastulat, Pharyngula, Latest)
+============================================================
+using 'qgraph' to generate a figure equivalent to Irie and Kuratani (2014) Fig 3. 
+I don't know how to adjust the color currently!
+
+```{r}
+library("qgraph")###only on the first one
+library("RColorBrewer")
+pdf("Z:/Shared/All projects/Phylotypic Stage/R/PhylotypicStage/plots/latest_timepoint_network.pdf")
+qgraph(latest_timepoint)
+title("Latest Stage")
+dev.off()
+
+pdf("Z:/Shared/All projects/Phylotypic Stage/R/PhylotypicStage/plots/pharyngula_network.pdf")
+qgraph(pharyngula)
+title("Pharyngula Stage")
+dev.off()
+
+pdf("Z:/Shared/All projects/Phylotypic Stage/R/PhylotypicStage/plots/blastula_network.pdf")
+qgraph(blastula_shield)
+title("Blastula/Shield Stage")
+dev.off()
+```
+
+
+ANOVA comparing PW species correlation strength at different stages
+====================================================================
+turn the PW matrix of sp-sp correlation into a linear vector
+join these into a df and run an ANOVA
+```{r}
+x<-data.matrix(pharyngula)
+y<-data.matrix(latest_timepoint)
+w<-data.matrix(blastula_shield)
+x[lower.tri(x,diag = TRUE)]<-NA
+x<-(as.numeric(x))
+x<-rbind(x,time='pharyngula')
+
+
+y[lower.tri(y,diag = TRUE)]<-NA
+y<-(as.numeric(y))
+y<-rbind(y,time='latest')
+
+w[lower.tri(w,diag = TRUE)]<-NA
+w<-(as.numeric(w))
+w<-rbind(w,time='blastula/shield')
+
+blastula_pharyngula_latest.4aov<-t(data.frame(w,x,y))
+colnames(blastula_pharyngula_latest.4aov)<-c('cor', 'time')
+blastula_pharyngula_latest.4aov<-blastula_pharyngula_latest.4aov[complete.cases(blastula_pharyngula_latest.4aov),]
+blastula_pharyngula_latest.4aov<-as.data.frame(blastula_pharyngula_latest.4aov)
+
+#boxplot(blastula_pharyngula_latest.4aov$cor~blastula_pharyngula_latest.4aov$time)
+
+#ggplot(blastula_pharyngula_latest.4aov, aes(x = time, y = cor))
+#geom_boxplot(fill = "grey80") 
+
+blastula_pharyngula_latest.AOV<-aov(time~cor, data=blastula_pharyngula_latest.4aov)
+
+
+```
+
+
+You can also embed plots, for example:
+
+```{r, echo=FALSE}
+plot(cars)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

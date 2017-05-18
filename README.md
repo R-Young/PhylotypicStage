@@ -8,7 +8,7 @@ Future investications with include RNA-seq data from some overlapping and some u
 Note: this repository and version control practices were a late stage addition... some code is not well vetted, yet. 
 
 May 18, 2017: 
-Working on developing independent contrast approaches for these stage clustered OGG expression data. Approach visualized below: 
-d) Vertebrate Contrast:
+Working on developing independent contrast approaches for these stage clustered OGG expression data. 
+PhylotypicStage/IndependentContrast_Equations.jpg
 
 

@@ -28,20 +28,24 @@ DanOGGRank_clust5<-data.frame(t(apply(-DanMeanBYclust5, 1, rank)))
 
 #For each node look at the difference in OGG rank correct by summed branch lengths:
 #abs(RANKsp1-RANKsp2)/(branch length 1 + branch length 2)
-#branch length are median time estimates from 
-AmnioteOGGRank_clust5<-(abs(MusOGGRank_clust5 - 
-                          GalOGGRank_clust5))/(320+320)
-FrogOGGRank_clust5<-(abs(XlaevOGGRank_clust5 - 
-                       XtropOGGRank_clust5))/(52+52)
+#branch length are median time estimates from time tree. 
+AmnioteOGGRank_contrast_clust5<-(abs(MusOGGRank_clust5 - 
+                          GalOGGRank_clust5))/sqrt(320+320)
+FrogOGGRank_contrast_clust5<-(abs(XlaevOGGRank_clust5 - 
+                       XtropOGGRank_clust5))/sqrt(52+52)
 
-#for internal node comparisons we need a weighted average()
-#AnamnioteOGGRank_clust5<-MusOGGRank_clust5*(1/)
- #                             FrogOGGRank_clust5))/((353-320)+
-  #                                                  (353-52))
-#AnamnioteOGGRank_clust5<-(abs(AmnioteOGGRank_clust5 -
-#                              FrogOGGRank_clust5))/((353-320)+
- #                                                   (353-52))
+AnamnioteOGGRank_contrast_clust5<-(abs((MusOGGRank_clust5/2 + 
+                                GalOGGRank_clust5/2) - 
+                              (XlaevOGGRank_clust5/2 + 
+                                 XtropOGGRank_clust5/2))/
+                                sqrt(35+301))
 
+VertebrateOGGRank_contrast_clust5<-(abs((MusOGGRank_clust5/4 + 
+                                GalOGGRank_clust5/4 + 
+                                XlaevOGGRank_clust5/4 + 
+                                 XtropOGGRank_clust5/4) -
+                                 DanOGGRank_clust5)/
+                                  sqrt(79+432))
 ```
 
 

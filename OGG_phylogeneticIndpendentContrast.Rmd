@@ -11,11 +11,10 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## R Markdown
 
-This R Markdown document is meant to develop independent contrast approach to analyzing the interspecific microarray data through embryogenesis -- to investigate whether an hourglass in gene expression similarity is present. Attempting two approaches. One is at the OGG level (1), the second is at the phylogenetic node level (2). I am not as keen on (2), even more averaging!
-
-(1)abs(OGG by cluster RANK #sp1ornode1 - OGG by cluster RANK #sp2 or node2)/sum(branch lengths)
+This R Markdown document is meant to develop independent contrast approach to analyzing the interspecific microarray data through embryogenesis -- to investigate whether an hourglass in gene expression similarity is present. Rank expression of each OGG by stage cluster will be used for the contrast. 
 NOTES: species OGG expression mean by cluster comes from:
 \All_projects\Phylotypic Stage\R\PhylotypicStage\MeanByCluster_OGG.Rmd
+
 
 ```{r, establishing datasets for pairwise comparisons}
 #generate species by cluster RANKs for all OGGs
@@ -47,17 +46,71 @@ VertebrateOGGRank_contrast_clust5<-(abs((MusOGGRank_clust5/4 +
                                  DanOGGRank_clust5)/
                                   sqrt(79+432))
 ```
+Cluster correlations of the Contrast dataframes
 
-
+```{r}compute all pairwise correlaton
 ```{r}
+PWstageCor_Pearson<-function(x,y) {
+  x<-t(x)
+  y<-t(y)
+  z<-cor(x,y,use="pairwise.complete.obs", method="pearson")
+  return(z)
+}
 
+
+PhyContrastClustCor5<-rbind.data.frame(diag(PWstageCor_Pearson(AmnioteOGGRank_contrast_clust5,
+                                                       FrogOGGRank_contrast_clust5)),
+                                       diag(PWstageCor_Pearson(AmnioteOGGRank_contrast_clust5, 
+                                                       AnamnioteOGGRank_contrast_clust5)),
+                                       diag(PWstageCor_Pearson(AmnioteOGGRank_contrast_clust5,
+                                                       VertebrateOGGRank_contrast_clust5)),
+                                       diag(PWstageCor_Pearson(FrogOGGRank_contrast_clust5,
+                                                       AnamnioteOGGRank_contrast_clust5)),
+                                       diag(PWstageCor_Pearson(FrogOGGRank_contrast_clust5,
+                                                       VertebrateOGGRank_contrast_clust5)),
+                                       diag(PWstageCor_Pearson(AnamnioteOGGRank_contrast_clust5,
+                                                       VertebrateOGGRank_contrast_clust5)))
+colnames(PhyContrastClustCor5)<-c("cluster1", 
+                                  "cluster2", 
+                                  "cluster3", 
+                                  "cluster4", 
+                                  "cluster5")
+rownames(PhyContrastClustCor5)<-c("Amniote_Frog", 
+                                  "Amniote_Anamniote", 
+                                  "Amniote_Vertebrate", 
+                                  "Frog_Anamniote", 
+                                  "Frog_Vertebrate",
+                                  "Anamniote_Vertebrate")
+
+##################using rank correlation
+PhyContrastClustCor5_Rank<-rbind.data.frame(diag(PWstageCor(AmnioteOGGRank_contrast_clust5,
+                                                       FrogOGGRank_contrast_clust5)),
+                                       diag(PWstageCor(AmnioteOGGRank_contrast_clust5, 
+                                                       AnamnioteOGGRank_contrast_clust5)),
+                                       diag(PWstageCor(AmnioteOGGRank_contrast_clust5,
+                                                       VertebrateOGGRank_contrast_clust5)),
+                                       diag(PWstageCor(FrogOGGRank_contrast_clust5,
+                                                       AnamnioteOGGRank_contrast_clust5)),
+                                       diag(PWstageCor(FrogOGGRank_contrast_clust5,
+                                                       VertebrateOGGRank_contrast_clust5)),
+                                       diag(PWstageCor(AnamnioteOGGRank_contrast_clust5,
+                                                       VertebrateOGGRank_contrast_clust5)))
+colnames(PhyContrastClustCor5_Rank)<-c("cluster1", 
+                                  "cluster2", 
+                                  "cluster3", 
+                                  "cluster4", 
+                                  "cluster5")
+rownames(PhyContrastClustCor5_Rank)<-c("Amniote_Frog", 
+                                  "Amniote_Anamniote", 
+                                  "Amniote_Vertebrate", 
+                                  "Frog_Anamniote", 
+                                  "Frog_Vertebrate",
+                                  "Anamniote_Vertebrate")
 ```
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+plot box_RankCor_clust is from MeanByCluster_OGG.Rmd
+```{r}
+library("reshape2")
+library("ggplot2")
+box_RankCor_clust(PhyContrastClustCor5)
+box_RankCor_clust(PhyContrastClustCor5_Rank)
 ```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

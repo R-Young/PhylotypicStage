@@ -6,3 +6,9 @@ Data aquisition, microarray normalization, data quality control are contained in
 Theese analysis start with normalized microarray (and eventually RNA-seq) expression data 
 Future investications with include RNA-seq data from some overlapping and some unique species. 
 Note: this repository and version control practices were a late stage addition... some code is not well vetted, yet. 
+
+May 18, 2017: 
+Working on developing independent contrast approaches for these stage clustered OGG expression data. Approach visualized below: 
+d) Vertebrate Contrast:
+
+

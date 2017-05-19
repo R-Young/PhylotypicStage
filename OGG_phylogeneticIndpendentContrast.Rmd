@@ -108,9 +108,89 @@ rownames(PhyContrastClustCor5_Rank)<-c("Amniote_Frog",
                                   "Anamniote_Vertebrate")
 ```
 plot box_RankCor_clust is from MeanByCluster_OGG.Rmd
-```{r}
+```{r, plots}
 library("reshape2")
 library("ggplot2")
+#pdf("PhyloContrast_hourglass.pdf", useDingbats = FALSE)
 box_RankCor_clust(PhyContrastClustCor5)
 box_RankCor_clust(PhyContrastClustCor5_Rank)
+#dev.off()
+```
+perform stats on the contrasted data
+```{r, stats}
+x=(PhyContrastClustCor5)
+y=nrow(x)
+k1<-data.frame(x$cluster1)
+colnames(k1)<-"k"
+k2<-data.frame(x$cluster2)
+colnames(k2)<-"k"
+k3<-data.frame(x$cluster3)
+colnames(k3)<-"k"
+k4<-data.frame(x$cluster4)
+colnames(k4)<-"k"
+k5<-data.frame(x$cluster5)
+colnames(k5)<-"k"
+k=rbind.data.frame(k1,
+                   k2,
+                   k3,
+                   k4,
+                   k5)
+time<-data.frame(rep(c("k1",
+                       "k2",
+                       "k3",
+                       "k4",
+                       "k5"), 
+                     c(y,
+                       y,
+                       y,
+                       y,
+                       y)))
+k5all=cbind.data.frame(time,
+                       k)
+colnames(k5all)<-c("time",
+                   "k")
+
+summary(aov(k~time, 
+            data=k5all))
+TukeyHSD(aov(k~time, 
+             data=k5all))
+
+
+##################
+x=(PhyContrastClustCor5_Rank)
+y=nrow(x)
+k1<-data.frame(x$cluster1)
+colnames(k1)<-"k"
+k2<-data.frame(x$cluster2)
+colnames(k2)<-"k"
+k3<-data.frame(x$cluster3)
+colnames(k3)<-"k"
+k4<-data.frame(x$cluster4)
+colnames(k4)<-"k"
+k5<-data.frame(x$cluster5)
+colnames(k5)<-"k"
+k=rbind.data.frame(k1,
+                   k2,
+                   k3,
+                   k4,
+                   k5)
+time<-data.frame(rep(c("k1",
+                       "k2",
+                       "k3",
+                       "k4",
+                       "k5"), 
+                     c(y,
+                       y,
+                       y,
+                       y,
+                       y)))
+k5all=cbind.data.frame(time,
+                       k)
+colnames(k5all)<-c("time",
+                   "k")
+
+summary(aov(k~time, 
+            data=k5all))
+TukeyHSD(aov(k~time, 
+             data=k5all))
 ```

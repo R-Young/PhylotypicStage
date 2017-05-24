@@ -1,0 +1,27 @@
+---
+title: "OnetoOneOrthologs_Correlation_PhyloContrast_Correlation"
+author: "Becca"
+date: "May 19, 2017"
+output: html_document
+---
+This markdown find the subset of genes that are 1:1 orthologs and then looks for an hourglass
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+All expression data files have this nomenclature format
+drer.all.stages
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

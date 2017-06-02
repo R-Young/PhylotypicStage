@@ -133,8 +133,10 @@ plot box_RankCor_clust is from MeanByCluster_OGG.Rmd
 library("reshape2")
 library("ggplot2")
 pdf("PhyloContrast_hourglass.pdf", useDingbats = FALSE)
-PhyRankCor<-box_RankCor_clust(PhyContrastClustCor5)
-PhyPearsCor<-box_RankCor_clust(PhyContrastClustCor5_Rank)
+#PhyRankCor<-
+  box_RankCor_clust(PhyContrastClustCor5)
+#PhyPearsCor<-
+  box_RankCor_clust(PhyContrastClustCor5_Rank)
 NoFrogs<-box_RankCor_clust(PhyContrastClustCor5_noFrogs)
 dev.off()
 ```
@@ -276,10 +278,21 @@ row.names(AmnioteOGGRank_contrast_clust5)<-c("cluster1",
 x=data.frame(t(AmnioteOGGRank_contrast_clust5))
 row.names(x)<-colnames(AmnioteOGGRank_contrast_clust5)
 Amniote_contrast_clust5_peakedness=dplyr::mutate(x,
-                                                 Mean1_2 = (cluster1 + cluster2)/2) %>%
-  dplyr::mutate(Mean4_5 = (cluster4 + cluster5)/2) %>%
-  dplyr::mutate(Peak3_fromEarly=Mean1_2 - cluster3) %>%
-  dplyr::mutate(Peak3_fromLate=Mean4_5 - cluster3)
+                                              Peak3_fromEarly=(cluster1 + cluster2)/2 - cluster3) %>%
+  dplyr::mutate(Peak3_fromLate=(cluster4 + cluster5)/2 - cluster3) %>%
+  dplyr::mutate(Peak2_fromEarly= cluster1 - cluster2) %>%
+  dplyr::mutate(Peak2_fromLate= (cluster3 + cluster4 + cluster5)/3 - cluster2) %>%
+  dplyr::mutate(Peak4_fromEarly= (cluster1 + cluster2 + cluster3)/3 - cluster4) %>%
+  dplyr::mutate(Peak4_fromLate= cluster5 - cluster4) %>%
+  dplyr::mutate(PeakMID_fromEarly= cluster1 - (cluster2 + cluster3 + cluster4)/3) %>%
+  dplyr::mutate(PeakMID_fromLate= cluster5 - (cluster2 + cluster3 + cluster4)/3) %>%
+  dplyr::mutate(PeakMID2_3_fromEarly= cluster1 - (cluster2 + cluster3)/2) %>%
+  dplyr::mutate(PeakMID2_3_fromLate= (cluster4 + cluster5)/2 - (cluster2 + cluster3)/2) %>%
+  dplyr::mutate(PeakMID3_4_fromEarly= (cluster1 +cluster2)/2 - (cluster3 + cluster4)/2) %>%
+  dplyr::mutate(PeakMID3_4_fromLate= cluster5 - (cluster3 + cluster4)/2) %>%
+  dplyr::mutate(Name=row.names(x)) %>%
+  dplyr::mutate(Level=rep("Amniote", 
+                          length(AmnioteOGGRank_contrast_clust5)))
 
 #hourglass<-which(Amniote_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  #
   #             Amniote_contrast_clust5_peakedness$Peak3_fromLate > 0)
@@ -306,10 +319,21 @@ row.names(FrogOGGRank_contrast_clust5)<-c("cluster1",
 x=data.frame(t(FrogOGGRank_contrast_clust5))
 row.names(x)<-colnames(FrogOGGRank_contrast_clust5)
 Frog_contrast_clust5_peakedness=dplyr::mutate(x,
-                                                 Mean1_2 = (cluster1 + cluster2)/2) %>%
-  dplyr::mutate(Mean4_5 = (cluster4 + cluster5)/2) %>%
-  dplyr::mutate(Peak3_fromEarly=Mean1_2 - cluster3) %>%
-  dplyr::mutate(Peak3_fromLate=Mean4_5 - cluster3)
+                                              Peak3_fromEarly=(cluster1 + cluster2)/2 - cluster3) %>%
+  dplyr::mutate(Peak3_fromLate=(cluster4 + cluster5)/2 - cluster3) %>%
+  dplyr::mutate(Peak2_fromEarly= cluster1 - cluster2) %>%
+  dplyr::mutate(Peak2_fromLate= (cluster3 + cluster4 + cluster5)/3 - cluster2) %>%
+  dplyr::mutate(Peak4_fromEarly= (cluster1 + cluster2 + cluster3)/3 - cluster4) %>%
+  dplyr::mutate(Peak4_fromLate= cluster5 - cluster4) %>%
+  dplyr::mutate(PeakMID_fromEarly= cluster1 - (cluster2 + cluster3 + cluster4)/3) %>%
+  dplyr::mutate(PeakMID_fromLate= cluster5 - (cluster2 + cluster3 + cluster4)/3) %>%
+  dplyr::mutate(PeakMID2_3_fromEarly= cluster1 - (cluster2 + cluster3)/2) %>%
+  dplyr::mutate(PeakMID2_3_fromLate= (cluster4 + cluster5)/2 - (cluster2 + cluster3)/2) %>%
+  dplyr::mutate(PeakMID3_4_fromEarly= (cluster1 +cluster2)/2 - (cluster3 + cluster4)/2) %>%
+  dplyr::mutate(PeakMID3_4_fromLate= cluster5 - (cluster3 + cluster4)/2) %>%
+  dplyr::mutate(Name=row.names(x)) %>%
+  dplyr::mutate(Level=rep("Frogs", 
+                          length(FrogOGGRank_contrast_clust5)))
 
 #Frog hourglass
 length(which(Frog_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  
@@ -334,10 +358,22 @@ row.names(AnamnioteOGGRank_contrast_clust5)<-c("cluster1",
 x=data.frame(t(AnamnioteOGGRank_contrast_clust5))
 row.names(x)<-colnames(AnamnioteOGGRank_contrast_clust5)
 Anamniote_contrast_clust5_peakedness=dplyr::mutate(x,
-                                                 Mean1_2 = (cluster1 + cluster2)/2) %>%
-  dplyr::mutate(Mean4_5 = (cluster4 + cluster5)/2) %>%
-  dplyr::mutate(Peak3_fromEarly=Mean1_2 - cluster3) %>%
-  dplyr::mutate(Peak3_fromLate=Mean4_5 - cluster3)
+                                              Peak3_fromEarly=(cluster1 + cluster2)/2 - cluster3) %>%
+  dplyr::mutate(Peak3_fromLate=(cluster4 + cluster5)/2 - cluster3) %>%
+  dplyr::mutate(Peak2_fromEarly= cluster1 - cluster2) %>%
+  dplyr::mutate(Peak2_fromLate= (cluster3 + cluster4 + cluster5)/3 - cluster2) %>%
+  dplyr::mutate(Peak4_fromEarly= (cluster1 + cluster2 + cluster3)/3 - cluster4) %>%
+  dplyr::mutate(Peak4_fromLate= cluster5 - cluster4) %>%
+  dplyr::mutate(PeakMID_fromEarly= cluster1 - (cluster2 + cluster3 + cluster4)/3) %>%
+  dplyr::mutate(PeakMID_fromLate= cluster5 - (cluster2 + cluster3 + cluster4)/3) %>%
+  dplyr::mutate(PeakMID2_3_fromEarly= cluster1 - (cluster2 + cluster3)/2) %>%
+  dplyr::mutate(PeakMID2_3_fromLate= (cluster4 + cluster5)/2 - (cluster2 + cluster3)/2) %>%
+  dplyr::mutate(PeakMID3_4_fromEarly= (cluster1 +cluster2)/2 - (cluster3 + cluster4)/2) %>%
+  dplyr::mutate(PeakMID3_4_fromLate= cluster5 - (cluster3 + cluster4)/2) %>%
+  dplyr::mutate(Name=row.names(x)) %>%
+  dplyr::mutate(Level=rep("Anamniote", 
+                          length(AnamnioteOGGRank_contrast_clust5)))
+
 
 #Anamniote hourglass
 length(which(Anamniote_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  
@@ -362,12 +398,23 @@ row.names(VertebrateOGGRank_contrast_clust5)<-c("cluster1",
 x=data.frame(t(VertebrateOGGRank_contrast_clust5))
 row.names(x)<-colnames(VertebrateOGGRank_contrast_clust5)
 Vertebrate_contrast_clust5_peakedness=dplyr::mutate(x,
-                                                 Mean1_2 = (cluster1 + cluster2)/2) %>%
-  dplyr::mutate(Mean4_5 = (cluster4 + cluster5)/2) %>%
-  dplyr::mutate(Peak3_fromEarly=Mean1_2 - cluster3) %>%
-  dplyr::mutate(Peak3_fromLate=Mean4_5 - cluster3)
+                                              Peak3_fromEarly=(cluster1 + cluster2)/2 - cluster3) %>%
+  dplyr::mutate(Peak3_fromLate=(cluster4 + cluster5)/2 - cluster3) %>%
+  dplyr::mutate(Peak2_fromEarly= cluster1 - cluster2) %>%
+  dplyr::mutate(Peak2_fromLate= (cluster3 + cluster4 + cluster5)/3 - cluster2) %>%
+  dplyr::mutate(Peak4_fromEarly= (cluster1 + cluster2 + cluster3)/3 - cluster4) %>%
+  dplyr::mutate(Peak4_fromLate= cluster5 - cluster4) %>%
+  dplyr::mutate(PeakMID_fromEarly= cluster1 - (cluster2 + cluster3 + cluster4)/3) %>%
+  dplyr::mutate(PeakMID_fromLate= cluster5 - (cluster2 + cluster3 + cluster4)/3) %>%
+  dplyr::mutate(PeakMID2_3_fromEarly= cluster1 - (cluster2 + cluster3)/2) %>%
+  dplyr::mutate(PeakMID2_3_fromLate= (cluster4 + cluster5)/2 - (cluster2 + cluster3)/2) %>%
+  dplyr::mutate(PeakMID3_4_fromEarly= (cluster1 +cluster2)/2 - (cluster3 + cluster4)/2) %>%
+  dplyr::mutate(PeakMID3_4_fromLate= cluster5 - (cluster3 + cluster4)/2) %>%
+  dplyr::mutate(Name=row.names(x)) %>%
+  dplyr::mutate(Level=rep("Vertebrate", 
+                          length(VertebrateOGGRank_contrast_clust5)))
 
-#Vertebrate hourglass
+#Vertebrate hourglass peak 
 length(which(Vertebrate_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  
                Vertebrate_contrast_clust5_peakedness$Peak3_fromLate > 0))/length(Vertebrate_contrast_clust5_peakedness$Peak3_fromEarly)
 #Vertebrate inverse hourglass
@@ -379,4 +426,518 @@ length(which(Vertebrate_contrast_clust5_peakedness$Peak3_fromEarly < 0 &
 #Vertebrate late convergence
 length(which(Vertebrate_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  
                Vertebrate_contrast_clust5_peakedness$Peak3_fromLate < 0))/length(Vertebrate_contrast_clust5_peakedness$Peak3_fromEarly)
+```
+
+Generate data frame that calculates proportion of OGGs following different evolutionary hypotheses (i.e., hourglass, inverse hourglass, early conservation, late conservation)
+```{r}
+level=c("amniote", "frog", "anamiote", "vertebrate")
+level=factor(level, levels=level)
+percent_hourglass_at3<-c(length(which(Amniote_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  
+               Amniote_contrast_clust5_peakedness$Peak3_fromLate > 0))/length(Amniote_contrast_clust5_peakedness$Peak3_fromEarly), 
+               length(which(Frog_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  
+               Frog_contrast_clust5_peakedness$Peak3_fromLate > 0))/length(Frog_contrast_clust5_peakedness$Peak3_fromEarly),
+               length(which(Anamniote_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  
+               Anamniote_contrast_clust5_peakedness$Peak3_fromLate > 0))/length(Anamniote_contrast_clust5_peakedness$Peak3_fromEarly),
+               length(which(Vertebrate_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  
+               Vertebrate_contrast_clust5_peakedness$Peak3_fromLate > 0))/length(Vertebrate_contrast_clust5_peakedness$Peak3_fromEarly))
+percent_earlycons_at3<-c(length(which(Amniote_contrast_clust5_peakedness$Peak3_fromEarly < 0 &  
+               Amniote_contrast_clust5_peakedness$Peak3_fromLate > 0))/length(Amniote_contrast_clust5_peakedness$Peak3_fromEarly), 
+               length(which(Frog_contrast_clust5_peakedness$Peak3_fromEarly < 0 &  
+               Frog_contrast_clust5_peakedness$Peak3_fromLate > 0))/length(Frog_contrast_clust5_peakedness$Peak3_fromEarly),
+               length(which(Anamniote_contrast_clust5_peakedness$Peak3_fromEarly < 0 &  
+               Anamniote_contrast_clust5_peakedness$Peak3_fromLate > 0))/length(Anamniote_contrast_clust5_peakedness$Peak3_fromEarly),
+               length(which(Vertebrate_contrast_clust5_peakedness$Peak3_fromEarly < 0 &  
+               Vertebrate_contrast_clust5_peakedness$Peak3_fromLate > 0))/length(Vertebrate_contrast_clust5_peakedness$Peak3_fromEarly))
+percent_latecons_at3<-c(length(which(Amniote_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  
+               Amniote_contrast_clust5_peakedness$Peak3_fromLate < 0))/length(Amniote_contrast_clust5_peakedness$Peak3_fromEarly), 
+               length(which(Frog_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  
+               Frog_contrast_clust5_peakedness$Peak3_fromLate < 0))/length(Frog_contrast_clust5_peakedness$Peak3_fromEarly),
+               length(which(Anamniote_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  
+               Anamniote_contrast_clust5_peakedness$Peak3_fromLate < 0))/length(Anamniote_contrast_clust5_peakedness$Peak3_fromEarly),
+               length(which(Vertebrate_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  
+               Vertebrate_contrast_clust5_peakedness$Peak3_fromLate < 0))/length(Vertebrate_contrast_clust5_peakedness$Peak3_fromEarly))
+percent_inverseHour_at3<-c(length(which(Amniote_contrast_clust5_peakedness$Peak3_fromEarly < 0 &  
+               Amniote_contrast_clust5_peakedness$Peak3_fromLate < 0))/length(Amniote_contrast_clust5_peakedness$Peak3_fromEarly), 
+               length(which(Frog_contrast_clust5_peakedness$Peak3_fromEarly < 0 &  
+               Frog_contrast_clust5_peakedness$Peak3_fromLate < 0))/length(Frog_contrast_clust5_peakedness$Peak3_fromEarly),
+               length(which(Anamniote_contrast_clust5_peakedness$Peak3_fromEarly < 0 &  
+               Anamniote_contrast_clust5_peakedness$Peak3_fromLate < 0))/length(Anamniote_contrast_clust5_peakedness$Peak3_fromEarly),
+               length(which(Vertebrate_contrast_clust5_peakedness$Peak3_fromEarly < 0 &  
+               Vertebrate_contrast_clust5_peakedness$Peak3_fromLate < 0))/length(Vertebrate_contrast_clust5_peakedness$Peak3_fromEarly))
+
+percent_hourglass_at2<-c(length(which(Amniote_contrast_clust5_peakedness$Peak2_fromEarly > 0 &  
+               Amniote_contrast_clust5_peakedness$Peak2_fromLate > 0))/length(Amniote_contrast_clust5_peakedness$Peak2_fromEarly), 
+               length(which(Frog_contrast_clust5_peakedness$Peak2_fromEarly > 0 &  
+               Frog_contrast_clust5_peakedness$Peak2_fromLate > 0))/length(Frog_contrast_clust5_peakedness$Peak2_fromEarly),
+               length(which(Anamniote_contrast_clust5_peakedness$Peak2_fromEarly > 0 &  
+               Anamniote_contrast_clust5_peakedness$Peak2_fromLate > 0))/length(Anamniote_contrast_clust5_peakedness$Peak2_fromEarly),
+               length(which(Vertebrate_contrast_clust5_peakedness$Peak2_fromEarly > 0 &  
+               Vertebrate_contrast_clust5_peakedness$Peak2_fromLate > 0))/length(Vertebrate_contrast_clust5_peakedness$Peak2_fromEarly))
+percent_earlycons_at2<-c(length(which(Amniote_contrast_clust5_peakedness$Peak2_fromEarly < 0 &  
+               Amniote_contrast_clust5_peakedness$Peak2_fromLate > 0))/length(Amniote_contrast_clust5_peakedness$Peak2_fromEarly), 
+               length(which(Frog_contrast_clust5_peakedness$Peak2_fromEarly < 0 &  
+               Frog_contrast_clust5_peakedness$Peak2_fromLate > 0))/length(Frog_contrast_clust5_peakedness$Peak2_fromEarly),
+               length(which(Anamniote_contrast_clust5_peakedness$Peak2_fromEarly < 0 &  
+               Anamniote_contrast_clust5_peakedness$Peak2_fromLate > 0))/length(Anamniote_contrast_clust5_peakedness$Peak2_fromEarly),
+               length(which(Vertebrate_contrast_clust5_peakedness$Peak2_fromEarly < 0 &  
+               Vertebrate_contrast_clust5_peakedness$Peak2_fromLate > 0))/length(Vertebrate_contrast_clust5_peakedness$Peak2_fromEarly))
+percent_latecons_at2<-c(length(which(Amniote_contrast_clust5_peakedness$Peak2_fromEarly > 0 &  
+               Amniote_contrast_clust5_peakedness$Peak2_fromLate < 0))/length(Amniote_contrast_clust5_peakedness$Peak2_fromEarly), 
+               length(which(Frog_contrast_clust5_peakedness$Peak2_fromEarly > 0 &  
+               Frog_contrast_clust5_peakedness$Peak2_fromLate < 0))/length(Frog_contrast_clust5_peakedness$Peak2_fromEarly),
+               length(which(Anamniote_contrast_clust5_peakedness$Peak2_fromEarly > 0 &  
+               Anamniote_contrast_clust5_peakedness$Peak2_fromLate < 0))/length(Anamniote_contrast_clust5_peakedness$Peak2_fromEarly),
+               length(which(Vertebrate_contrast_clust5_peakedness$Peak2_fromEarly > 0 &  
+               Vertebrate_contrast_clust5_peakedness$Peak2_fromLate < 0))/length(Vertebrate_contrast_clust5_peakedness$Peak2_fromEarly))
+percent_inverseHour_at2<-c(length(which(Amniote_contrast_clust5_peakedness$Peak2_fromEarly < 0 &  
+               Amniote_contrast_clust5_peakedness$Peak2_fromLate < 0))/length(Amniote_contrast_clust5_peakedness$Peak2_fromEarly), 
+               length(which(Frog_contrast_clust5_peakedness$Peak2_fromEarly < 0 &  
+               Frog_contrast_clust5_peakedness$Peak2_fromLate < 0))/length(Frog_contrast_clust5_peakedness$Peak2_fromEarly),
+               length(which(Anamniote_contrast_clust5_peakedness$Peak2_fromEarly < 0 &  
+               Anamniote_contrast_clust5_peakedness$Peak2_fromLate < 0))/length(Anamniote_contrast_clust5_peakedness$Peak2_fromEarly),
+               length(which(Vertebrate_contrast_clust5_peakedness$Peak2_fromEarly < 0 &  
+               Vertebrate_contrast_clust5_peakedness$Peak2_fromLate < 0))/length(Vertebrate_contrast_clust5_peakedness$Peak2_fromEarly))
+
+percent_hourglass_at4<-c(length(which(Amniote_contrast_clust5_peakedness$Peak4_fromEarly > 0 &  
+               Amniote_contrast_clust5_peakedness$Peak4_fromLate > 0))/length(Amniote_contrast_clust5_peakedness$Peak4_fromEarly), 
+               length(which(Frog_contrast_clust5_peakedness$Peak4_fromEarly > 0 &  
+               Frog_contrast_clust5_peakedness$Peak4_fromLate > 0))/length(Frog_contrast_clust5_peakedness$Peak4_fromEarly),
+               length(which(Anamniote_contrast_clust5_peakedness$Peak4_fromEarly > 0 &  
+               Anamniote_contrast_clust5_peakedness$Peak4_fromLate > 0))/length(Anamniote_contrast_clust5_peakedness$Peak4_fromEarly),
+               length(which(Vertebrate_contrast_clust5_peakedness$Peak4_fromEarly > 0 &  
+               Vertebrate_contrast_clust5_peakedness$Peak4_fromLate > 0))/length(Vertebrate_contrast_clust5_peakedness$Peak4_fromEarly))
+percent_earlycons_at4<-c(length(which(Amniote_contrast_clust5_peakedness$Peak4_fromEarly < 0 &  
+               Amniote_contrast_clust5_peakedness$Peak4_fromLate > 0))/length(Amniote_contrast_clust5_peakedness$Peak4_fromEarly), 
+               length(which(Frog_contrast_clust5_peakedness$Peak4_fromEarly < 0 &  
+               Frog_contrast_clust5_peakedness$Peak4_fromLate > 0))/length(Frog_contrast_clust5_peakedness$Peak4_fromEarly),
+               length(which(Anamniote_contrast_clust5_peakedness$Peak4_fromEarly < 0 &  
+               Anamniote_contrast_clust5_peakedness$Peak4_fromLate > 0))/length(Anamniote_contrast_clust5_peakedness$Peak4_fromEarly),
+               length(which(Vertebrate_contrast_clust5_peakedness$Peak4_fromEarly < 0 &  
+               Vertebrate_contrast_clust5_peakedness$Peak4_fromLate > 0))/length(Vertebrate_contrast_clust5_peakedness$Peak4_fromEarly))
+percent_latecons_at4<-c(length(which(Amniote_contrast_clust5_peakedness$Peak4_fromEarly > 0 &  
+               Amniote_contrast_clust5_peakedness$Peak4_fromLate < 0))/length(Amniote_contrast_clust5_peakedness$Peak4_fromEarly), 
+               length(which(Frog_contrast_clust5_peakedness$Peak4_fromEarly > 0 &  
+               Frog_contrast_clust5_peakedness$Peak4_fromLate < 0))/length(Frog_contrast_clust5_peakedness$Peak4_fromEarly),
+               length(which(Anamniote_contrast_clust5_peakedness$Peak4_fromEarly > 0 &  
+               Anamniote_contrast_clust5_peakedness$Peak4_fromLate < 0))/length(Anamniote_contrast_clust5_peakedness$Peak4_fromEarly),
+               length(which(Vertebrate_contrast_clust5_peakedness$Peak4_fromEarly > 0 &  
+               Vertebrate_contrast_clust5_peakedness$Peak4_fromLate < 0))/length(Vertebrate_contrast_clust5_peakedness$Peak4_fromEarly))
+percent_inverseHour_at4<-c(length(which(Amniote_contrast_clust5_peakedness$Peak4_fromEarly < 0 &  
+               Amniote_contrast_clust5_peakedness$Peak4_fromLate < 0))/length(Amniote_contrast_clust5_peakedness$Peak4_fromEarly), 
+               length(which(Frog_contrast_clust5_peakedness$Peak4_fromEarly < 0 &  
+               Frog_contrast_clust5_peakedness$Peak4_fromLate < 0))/length(Frog_contrast_clust5_peakedness$Peak4_fromEarly),
+               length(which(Anamniote_contrast_clust5_peakedness$Peak4_fromEarly < 0 &  
+               Anamniote_contrast_clust5_peakedness$Peak4_fromLate < 0))/length(Anamniote_contrast_clust5_peakedness$Peak4_fromEarly),
+               length(which(Vertebrate_contrast_clust5_peakedness$Peak4_fromEarly < 0 &  
+               Vertebrate_contrast_clust5_peakedness$Peak4_fromLate < 0))/length(Vertebrate_contrast_clust5_peakedness$Peak4_fromEarly))
+
+#MID is the average of 2, 3, and 4
+percent_hourglass_MID<-c(length(which(Amniote_contrast_clust5_peakedness$PeakMID_fromEarly > 0 &  
+               Amniote_contrast_clust5_peakedness$PeakMID_fromLate > 0))/length(Amniote_contrast_clust5_peakedness$PeakMID_fromEarly), 
+               length(which(Frog_contrast_clust5_peakedness$PeakMID_fromEarly > 0 &  
+               Frog_contrast_clust5_peakedness$PeakMID_fromLate > 0))/length(Frog_contrast_clust5_peakedness$PeakMID_fromEarly),
+               length(which(Anamniote_contrast_clust5_peakedness$PeakMID_fromEarly > 0 &  
+               Anamniote_contrast_clust5_peakedness$PeakMID_fromLate > 0))/length(Anamniote_contrast_clust5_peakedness$PeakMID_fromEarly),
+               length(which(Vertebrate_contrast_clust5_peakedness$PeakMID_fromEarly > 0 &  
+               Vertebrate_contrast_clust5_peakedness$PeakMID_fromLate > 0))/length(Vertebrate_contrast_clust5_peakedness$PeakMID_fromEarly))
+percent_earlycons_MID<-c(length(which(Amniote_contrast_clust5_peakedness$PeakMID_fromEarly < 0 &  
+               Amniote_contrast_clust5_peakedness$PeakMID_fromLate > 0))/length(Amniote_contrast_clust5_peakedness$PeakMID_fromEarly), 
+               length(which(Frog_contrast_clust5_peakedness$PeakMID_fromEarly < 0 &  
+               Frog_contrast_clust5_peakedness$PeakMID_fromLate > 0))/length(Frog_contrast_clust5_peakedness$PeakMID_fromEarly),
+               length(which(Anamniote_contrast_clust5_peakedness$PeakMID_fromEarly < 0 &  
+               Anamniote_contrast_clust5_peakedness$PeakMID_fromLate > 0))/length(Anamniote_contrast_clust5_peakedness$PeakMID_fromEarly),
+               length(which(Vertebrate_contrast_clust5_peakedness$PeakMID_fromEarly < 0 &  
+               Vertebrate_contrast_clust5_peakedness$PeakMID_fromLate > 0))/length(Vertebrate_contrast_clust5_peakedness$PeakMID_fromEarly))
+percent_latecons_MID<-c(length(which(Amniote_contrast_clust5_peakedness$PeakMID_fromEarly > 0 &  
+               Amniote_contrast_clust5_peakedness$PeakMID_fromLate < 0))/length(Amniote_contrast_clust5_peakedness$PeakMID_fromEarly), 
+               length(which(Frog_contrast_clust5_peakedness$PeakMID_fromEarly > 0 &  
+               Frog_contrast_clust5_peakedness$PeakMID_fromLate < 0))/length(Frog_contrast_clust5_peakedness$PeakMID_fromEarly),
+               length(which(Anamniote_contrast_clust5_peakedness$PeakMID_fromEarly > 0 &  
+               Anamniote_contrast_clust5_peakedness$PeakMID_fromLate < 0))/length(Anamniote_contrast_clust5_peakedness$PeakMID_fromEarly),
+               length(which(Vertebrate_contrast_clust5_peakedness$PeakMID_fromEarly > 0 &  
+               Vertebrate_contrast_clust5_peakedness$PeakMID_fromLate < 0))/length(Vertebrate_contrast_clust5_peakedness$PeakMID_fromEarly))
+percent_inverseHour_MID<-c(length(which(Amniote_contrast_clust5_peakedness$PeakMID_fromEarly < 0 &  
+               Amniote_contrast_clust5_peakedness$PeakMID_fromLate < 0))/length(Amniote_contrast_clust5_peakedness$PeakMID_fromEarly), 
+               length(which(Frog_contrast_clust5_peakedness$PeakMID_fromEarly < 0 &  
+               Frog_contrast_clust5_peakedness$PeakMID_fromLate < 0))/length(Frog_contrast_clust5_peakedness$PeakMID_fromEarly),
+               length(which(Anamniote_contrast_clust5_peakedness$PeakMID_fromEarly < 0 &  
+               Anamniote_contrast_clust5_peakedness$PeakMID_fromLate < 0))/length(Anamniote_contrast_clust5_peakedness$PeakMID_fromEarly),
+               length(which(Vertebrate_contrast_clust5_peakedness$PeakMID_fromEarly < 0 &  
+               Vertebrate_contrast_clust5_peakedness$PeakMID_fromLate < 0))/length(Vertebrate_contrast_clust5_peakedness$PeakMID_fromEarly))
+
+#MID2_3 is the average of 2 and 3
+percent_hourglass_MID2_3<-c(length(which(Amniote_contrast_clust5_peakedness$PeakMID2_3_fromEarly > 0 &  
+               Amniote_contrast_clust5_peakedness$PeakMID2_3_fromLate > 0))/length(Amniote_contrast_clust5_peakedness$PeakMID2_3_fromEarly), 
+               length(which(Frog_contrast_clust5_peakedness$PeakMID2_3_fromEarly > 0 &  
+               Frog_contrast_clust5_peakedness$PeakMID2_3_fromLate > 0))/length(Frog_contrast_clust5_peakedness$PeakMID2_3_fromEarly),
+               length(which(Anamniote_contrast_clust5_peakedness$PeakMID2_3_fromEarly > 0 &  
+               Anamniote_contrast_clust5_peakedness$PeakMID2_3_fromLate > 0))/length(Anamniote_contrast_clust5_peakedness$PeakMID2_3_fromEarly),
+               length(which(Vertebrate_contrast_clust5_peakedness$PeakMID2_3_fromEarly > 0 &  
+               Vertebrate_contrast_clust5_peakedness$PeakMID2_3_fromLate > 0))/length(Vertebrate_contrast_clust5_peakedness$PeakMID2_3_fromEarly))
+percent_earlycons_MID2_3<-c(length(which(Amniote_contrast_clust5_peakedness$PeakMID2_3_fromEarly < 0 &  
+               Amniote_contrast_clust5_peakedness$PeakMID2_3_fromLate > 0))/length(Amniote_contrast_clust5_peakedness$PeakMID2_3_fromEarly), 
+               length(which(Frog_contrast_clust5_peakedness$PeakMID2_3_fromEarly < 0 &  
+               Frog_contrast_clust5_peakedness$PeakMID2_3_fromLate > 0))/length(Frog_contrast_clust5_peakedness$PeakMID2_3_fromEarly),
+               length(which(Anamniote_contrast_clust5_peakedness$PeakMID2_3_fromEarly < 0 &  
+               Anamniote_contrast_clust5_peakedness$PeakMID2_3_fromLate > 0))/length(Anamniote_contrast_clust5_peakedness$PeakMID2_3_fromEarly),
+               length(which(Vertebrate_contrast_clust5_peakedness$PeakMID2_3_fromEarly < 0 &  
+               Vertebrate_contrast_clust5_peakedness$PeakMID2_3_fromLate > 0))/length(Vertebrate_contrast_clust5_peakedness$PeakMID2_3_fromEarly))
+percent_latecons_MID2_3<-c(length(which(Amniote_contrast_clust5_peakedness$PeakMID2_3_fromEarly > 0 &  
+               Amniote_contrast_clust5_peakedness$PeakMID2_3_fromLate < 0))/length(Amniote_contrast_clust5_peakedness$PeakMID2_3_fromEarly), 
+               length(which(Frog_contrast_clust5_peakedness$PeakMID2_3_fromEarly > 0 &  
+               Frog_contrast_clust5_peakedness$PeakMID2_3_fromLate < 0))/length(Frog_contrast_clust5_peakedness$PeakMID2_3_fromEarly),
+               length(which(Anamniote_contrast_clust5_peakedness$PeakMID2_3_fromEarly > 0 &  
+               Anamniote_contrast_clust5_peakedness$PeakMID2_3_fromLate < 0))/length(Anamniote_contrast_clust5_peakedness$PeakMID2_3_fromEarly),
+               length(which(Vertebrate_contrast_clust5_peakedness$PeakMID2_3_fromEarly > 0 &  
+               Vertebrate_contrast_clust5_peakedness$PeakMID2_3_fromLate < 0))/length(Vertebrate_contrast_clust5_peakedness$PeakMID2_3_fromEarly))
+percent_inverseHour_MID2_3<-c(length(which(Amniote_contrast_clust5_peakedness$PeakMID2_3_fromEarly < 0 &  
+               Amniote_contrast_clust5_peakedness$PeakMID2_3_fromLate < 0))/length(Amniote_contrast_clust5_peakedness$PeakMID2_3_fromEarly), 
+               length(which(Frog_contrast_clust5_peakedness$PeakMID2_3_fromEarly < 0 &  
+               Frog_contrast_clust5_peakedness$PeakMID2_3_fromLate < 0))/length(Frog_contrast_clust5_peakedness$PeakMID2_3_fromEarly),
+               length(which(Anamniote_contrast_clust5_peakedness$PeakMID2_3_fromEarly < 0 &  
+               Anamniote_contrast_clust5_peakedness$PeakMID2_3_fromLate < 0))/length(Anamniote_contrast_clust5_peakedness$PeakMID2_3_fromEarly),
+               length(which(Vertebrate_contrast_clust5_peakedness$PeakMID2_3_fromEarly < 0 &  
+               Vertebrate_contrast_clust5_peakedness$PeakMID2_3_fromLate < 0))/length(Vertebrate_contrast_clust5_peakedness$PeakMID2_3_fromEarly))
+
+#MID2_3 is the average of 3 and 4
+percent_hourglass_MID3_4<-c(length(which(Amniote_contrast_clust5_peakedness$PeakMID3_4_fromEarly > 0 &  
+               Amniote_contrast_clust5_peakedness$PeakMID3_4_fromLate > 0))/length(Amniote_contrast_clust5_peakedness$PeakMID3_4_fromEarly), 
+               length(which(Frog_contrast_clust5_peakedness$PeakMID3_4_fromEarly > 0 &  
+               Frog_contrast_clust5_peakedness$PeakMID3_4_fromLate > 0))/length(Frog_contrast_clust5_peakedness$PeakMID3_4_fromEarly),
+               length(which(Anamniote_contrast_clust5_peakedness$PeakMID3_4_fromEarly > 0 &  
+               Anamniote_contrast_clust5_peakedness$PeakMID3_4_fromLate > 0))/length(Anamniote_contrast_clust5_peakedness$PeakMID3_4_fromEarly),
+               length(which(Vertebrate_contrast_clust5_peakedness$PeakMID3_4_fromEarly > 0 &  
+               Vertebrate_contrast_clust5_peakedness$PeakMID3_4_fromLate > 0))/length(Vertebrate_contrast_clust5_peakedness$PeakMID3_4_fromEarly))
+percent_earlycons_MID3_4<-c(length(which(Amniote_contrast_clust5_peakedness$PeakMID3_4_fromEarly < 0 &  
+               Amniote_contrast_clust5_peakedness$PeakMID3_4_fromLate > 0))/length(Amniote_contrast_clust5_peakedness$PeakMID3_4_fromEarly), 
+               length(which(Frog_contrast_clust5_peakedness$PeakMID3_4_fromEarly < 0 &  
+               Frog_contrast_clust5_peakedness$PeakMID3_4_fromLate > 0))/length(Frog_contrast_clust5_peakedness$PeakMID3_4_fromEarly),
+               length(which(Anamniote_contrast_clust5_peakedness$PeakMID3_4_fromEarly < 0 &  
+               Anamniote_contrast_clust5_peakedness$PeakMID3_4_fromLate > 0))/length(Anamniote_contrast_clust5_peakedness$PeakMID3_4_fromEarly),
+               length(which(Vertebrate_contrast_clust5_peakedness$PeakMID3_4_fromEarly < 0 &  
+               Vertebrate_contrast_clust5_peakedness$PeakMID3_4_fromLate > 0))/length(Vertebrate_contrast_clust5_peakedness$PeakMID3_4_fromEarly))
+percent_latecons_MID3_4<-c(length(which(Amniote_contrast_clust5_peakedness$PeakMID3_4_fromEarly > 0 &  
+               Amniote_contrast_clust5_peakedness$PeakMID3_4_fromLate < 0))/length(Amniote_contrast_clust5_peakedness$PeakMID3_4_fromEarly), 
+               length(which(Frog_contrast_clust5_peakedness$PeakMID3_4_fromEarly > 0 &  
+               Frog_contrast_clust5_peakedness$PeakMID3_4_fromLate < 0))/length(Frog_contrast_clust5_peakedness$PeakMID3_4_fromEarly),
+               length(which(Anamniote_contrast_clust5_peakedness$PeakMID3_4_fromEarly > 0 &  
+               Anamniote_contrast_clust5_peakedness$PeakMID3_4_fromLate < 0))/length(Anamniote_contrast_clust5_peakedness$PeakMID3_4_fromEarly),
+               length(which(Vertebrate_contrast_clust5_peakedness$PeakMID3_4_fromEarly > 0 &  
+               Vertebrate_contrast_clust5_peakedness$PeakMID3_4_fromLate < 0))/length(Vertebrate_contrast_clust5_peakedness$PeakMID3_4_fromEarly))
+percent_inverseHour_MID3_4<-c(length(which(Amniote_contrast_clust5_peakedness$PeakMID3_4_fromEarly < 0 &  
+               Amniote_contrast_clust5_peakedness$PeakMID3_4_fromLate < 0))/length(Amniote_contrast_clust5_peakedness$PeakMID3_4_fromEarly), 
+               length(which(Frog_contrast_clust5_peakedness$PeakMID3_4_fromEarly < 0 &  
+               Frog_contrast_clust5_peakedness$PeakMID3_4_fromLate < 0))/length(Frog_contrast_clust5_peakedness$PeakMID3_4_fromEarly),
+               length(which(Anamniote_contrast_clust5_peakedness$PeakMID3_4_fromEarly < 0 &  
+               Anamniote_contrast_clust5_peakedness$PeakMID3_4_fromLate < 0))/length(Anamniote_contrast_clust5_peakedness$PeakMID3_4_fromEarly),
+               length(which(Vertebrate_contrast_clust5_peakedness$PeakMID3_4_fromEarly < 0 &  
+               Vertebrate_contrast_clust5_peakedness$PeakMID3_4_fromLate < 0))/length(Vertebrate_contrast_clust5_peakedness$PeakMID3_4_fromEarly))
+
+w<-data.frame(level,
+              percent_hourglass_at3,
+              percent_earlycons_at3,
+              percent_latecons_at3,
+              percent_inverseHour_at3)
+w<-cbind.data.frame(w, rep("3", 4))
+colnames(w)<-c("level",
+               "hourglass", 
+               "early conservation",
+               "late conservation", 
+               "inverse hourglass", 
+               "peak spot")
+
+x<-data.frame(level,
+              percent_hourglass_at2,
+              percent_earlycons_at2,
+              percent_latecons_at2,
+              percent_inverseHour_at2)
+x<-cbind.data.frame(x, rep("2", 4))
+colnames(x)<-c("level",
+               "hourglass", 
+               "early conservation",
+               "late conservation", 
+               "inverse hourglass", 
+               "peak spot")
+
+y<-data.frame(level,
+              percent_hourglass_at4,
+              percent_earlycons_at4,
+              percent_latecons_at4,
+              percent_inverseHour_at4)
+y<-cbind.data.frame(y, rep("4", 4))
+colnames(y)<-c("level",
+               "hourglass", 
+               "early conservation",
+               "late conservation", 
+               "inverse hourglass", 
+               "peak spot")
+
+z<-data.frame(level,
+              percent_hourglass_MID,
+              percent_earlycons_MID,
+              percent_latecons_MID,
+              percent_inverseHour_MID)
+z<-cbind.data.frame(z, rep("MID", 4))
+colnames(z)<-c("level",
+               "hourglass", 
+               "early conservation",
+               "late conservation", 
+               "inverse hourglass", 
+               "peak spot")
+
+z1<-data.frame(level,
+              percent_hourglass_MID2_3,
+              percent_earlycons_MID2_3,
+              percent_latecons_MID2_3,
+              percent_inverseHour_MID2_3)
+z1<-cbind.data.frame(z1, rep("MID2_3", 4))
+colnames(z1)<-c("level",
+               "hourglass", 
+               "early conservation",
+               "late conservation", 
+               "inverse hourglass", 
+               "peak spot")
+
+z2<-data.frame(level,
+              percent_hourglass_MID3_4,
+              percent_earlycons_MID3_4,
+              percent_latecons_MID3_4,
+              percent_inverseHour_MID3_4)
+z2<-cbind.data.frame(z2, rep("MID3_4", 4))
+colnames(z2)<-c("level",
+               "hourglass", 
+               "early conservation",
+               "late conservation", 
+               "inverse hourglass", 
+               "peak spot")
+
+OGGpatterns_All<-rbind.data.frame(w,x,y,z, z1, z2)
+
+OGGcounts_All<-OGGpatterns_All[,2:5]*length(VertebrateOGGRank_contrast_clust5)
+OGGcounts_All<-cbind.data.frame(OGGpatterns_All[,c(1,6)], OGGcounts_All)
+#row.names(OGGcounts_All)<-level
+
+#chisq test of each row. 
+apply(OGGcounts_All[,3:6], 1, chisq.test)
+
+
+#cleanup
+rm(list=ls(pattern="percent_hourglass"))
+rm(list=ls(pattern="percent_early"))
+rm(list=ls(pattern="percent_late"))
+rm(list=ls(pattern="percent_inverse"))
+rm(w, x, y, z, z1, z2)
+```
+
+barplots of the evolutionary hypotheses patterns
+
+```{r}
+library("reshape2")
+library("ggplot2")
+x<-melt(OGGpatterns_All)
+#pdf("test.pdf")
+
+ggplot(x, aes(x=level, y=value, fill=variable))+
+  geom_bar(stat="identity")
+#dev.off()
+
+pdf("allPeakedness.pdf")
+ggplot(x, aes(x=level, y=value, fill=variable))+
+  geom_boxplot()
+dev.off()
+```
+
+
+Calculatign the overlap for a four-way venn
+
+```{r}
+x<-Amniote_contrast_clust5_peakedness[which(Amniote_contrast_clust5_peakedness$
+                                              Peak3_fromLate > 0 & 
+                                            Amniote_contrast_clust5_peakedness$
+                                              Peak3_fromEarly > 0),
+                                            18]
+
+x1<-Frog_contrast_clust5_peakedness[which(Frog_contrast_clust5_peakedness$
+                                              Peak3_fromLate > 0 & 
+                                            Frog_contrast_clust5_peakedness$
+                                              Peak3_fromEarly > 0),
+                                            18]
+
+x2<-Anamniote_contrast_clust5_peakedness[which(Anamniote_contrast_clust5_peakedness$
+                                              Peak3_fromLate > 0 & 
+                                            Anamniote_contrast_clust5_peakedness$
+                                              Peak3_fromEarly > 0),
+                                            18]
+
+x3<-Vertebrate_contrast_clust5_peakedness[which(Vertebrate_contrast_clust5_peakedness$
+                                              Peak3_fromLate > 0 & 
+                                            Vertebrate_contrast_clust5_peakedness$
+                                              Peak3_fromEarly > 0),
+                                            18]
+library("VennDiagram")
+grid.newpage()
+
+venn.plot<-draw.quad.venn(area1 = length(x), 
+               area2 = length(x1), 
+               area3 = length(x2), 
+               area4 = length(x3), 
+               n12 = length(Reduce(intersect, list(x,x1))), 
+               n13 = length(Reduce(intersect, list(x,x2))), 
+               n14 = length(Reduce(intersect, list(x,x3))), 
+               n23 = length(Reduce(intersect, list(x1,x2))),
+               n24 = length(Reduce(intersect, list(x1,x3))),
+               n34 = length(Reduce(intersect, list(x2,x3))),
+               n123 = length(Reduce(intersect, list(x,x1,x2))),
+               n124 = length(Reduce(intersect, list(x,x1,x3))),
+               n134 = length(Reduce(intersect, list(x,x2,x3))),
+               n234 = length(Reduce(intersect, list(x1,x2,x3))),
+               n1234 = length(Reduce(intersect, list(x,x1,x2,x3))), 
+               category = c("Amniotes", "Frogs", "Anamniotes", "Vertebrates"))
+grid.draw(venn.plot)
+
+```
+
+```{r, early conservation venn}
+x<-Amniote_contrast_clust5_peakedness[which(Amniote_contrast_clust5_peakedness$
+                                              Peak3_fromLate > 0 & 
+                                            Amniote_contrast_clust5_peakedness$
+                                              Peak3_fromEarly < 0),
+                                            18]
+
+x1<-Frog_contrast_clust5_peakedness[which(Frog_contrast_clust5_peakedness$
+                                              Peak3_fromLate > 0 & 
+                                            Frog_contrast_clust5_peakedness$
+                                              Peak3_fromEarly < 0),
+                                            18]
+
+x2<-Anamniote_contrast_clust5_peakedness[which(Anamniote_contrast_clust5_peakedness$
+                                              Peak3_fromLate > 0 & 
+                                            Anamniote_contrast_clust5_peakedness$
+                                              Peak3_fromEarly < 0),
+                                            18]
+
+x3<-Vertebrate_contrast_clust5_peakedness[which(Vertebrate_contrast_clust5_peakedness$
+                                              Peak3_fromLate > 0 & 
+                                            Vertebrate_contrast_clust5_peakedness$
+                                              Peak3_fromEarly < 0),
+                                            18]
+#library("VennDiagram")
+grid.newpage()
+
+venn.plot<-draw.quad.venn(area1 = length(x), 
+               area2 = length(x1), 
+               area3 = length(x2), 
+               area4 = length(x3), 
+               n12 = length(Reduce(intersect, list(x,x1))), 
+               n13 = length(Reduce(intersect, list(x,x2))), 
+               n14 = length(Reduce(intersect, list(x,x3))), 
+               n23 = length(Reduce(intersect, list(x1,x2))),
+               n24 = length(Reduce(intersect, list(x1,x3))),
+               n34 = length(Reduce(intersect, list(x2,x3))),
+               n123 = length(Reduce(intersect, list(x,x1,x2))),
+               n124 = length(Reduce(intersect, list(x,x1,x3))),
+               n134 = length(Reduce(intersect, list(x,x2,x3))),
+               n234 = length(Reduce(intersect, list(x1,x2,x3))),
+               n1234 = length(Reduce(intersect, list(x,x1,x2,x3))), 
+               category = c("Amniotes", "Frogs", "Anamniotes", "Vertebrates"))
+grid.draw(venn.plot)
+
+
+```
+
+
+```{r, late conservation}
+x<-Amniote_contrast_clust5_peakedness[which(Amniote_contrast_clust5_peakedness$
+                                              Peak3_fromLate < 0 & 
+                                            Amniote_contrast_clust5_peakedness$
+                                              Peak3_fromEarly > 0),
+                                            18]
+
+x1<-Frog_contrast_clust5_peakedness[which(Frog_contrast_clust5_peakedness$
+                                              Peak3_fromLate < 0 & 
+                                            Frog_contrast_clust5_peakedness$
+                                              Peak3_fromEarly > 0),
+                                            18]
+
+x2<-Anamniote_contrast_clust5_peakedness[which(Anamniote_contrast_clust5_peakedness$
+                                              Peak3_fromLate < 0 & 
+                                            Anamniote_contrast_clust5_peakedness$
+                                              Peak3_fromEarly > 0),
+                                            18]
+
+x3<-Vertebrate_contrast_clust5_peakedness[which(Vertebrate_contrast_clust5_peakedness$
+                                              Peak3_fromLate < 0 & 
+                                            Vertebrate_contrast_clust5_peakedness$
+                                              Peak3_fromEarly > 0),
+                                            18]
+#library("VennDiagram")
+grid.newpage()
+
+venn.plot<-draw.quad.venn(area1 = length(x), 
+               area2 = length(x1), 
+               area3 = length(x2), 
+               area4 = length(x3), 
+               n12 = length(Reduce(intersect, list(x,x1))), 
+               n13 = length(Reduce(intersect, list(x,x2))), 
+               n14 = length(Reduce(intersect, list(x,x3))), 
+               n23 = length(Reduce(intersect, list(x1,x2))),
+               n24 = length(Reduce(intersect, list(x1,x3))),
+               n34 = length(Reduce(intersect, list(x2,x3))),
+               n123 = length(Reduce(intersect, list(x,x1,x2))),
+               n124 = length(Reduce(intersect, list(x,x1,x3))),
+               n134 = length(Reduce(intersect, list(x,x2,x3))),
+               n234 = length(Reduce(intersect, list(x1,x2,x3))),
+               n1234 = length(Reduce(intersect, list(x,x1,x2,x3))), 
+               category = c("Amniotes", "Frogs", "Anamniotes", "Vertebrates"))
+grid.draw(venn.plot)
+
+
+```
+
+```{r, inverse hourglass}
+x<-Amniote_contrast_clust5_peakedness[which(Amniote_contrast_clust5_peakedness$
+                                              Peak3_fromLate < 0 & 
+                                            Amniote_contrast_clust5_peakedness$
+                                              Peak3_fromEarly < 0),
+                                            18]
+
+x1<-Frog_contrast_clust5_peakedness[which(Frog_contrast_clust5_peakedness$
+                                              Peak3_fromLate < 0 & 
+                                            Frog_contrast_clust5_peakedness$
+                                              Peak3_fromEarly < 0),
+                                            18]
+
+x2<-Anamniote_contrast_clust5_peakedness[which(Anamniote_contrast_clust5_peakedness$
+                                              Peak3_fromLate < 0 & 
+                                            Anamniote_contrast_clust5_peakedness$
+                                              Peak3_fromEarly < 0),
+                                            18]
+
+x3<-Vertebrate_contrast_clust5_peakedness[which(Vertebrate_contrast_clust5_peakedness$
+                                              Peak3_fromLate < 0 & 
+                                            Vertebrate_contrast_clust5_peakedness$
+                                              Peak3_fromEarly < 0),
+                                            18]
+#library("VennDiagram")
+
+grid.newpage()
+
+venn.plot<-draw.quad.venn(area1 = length(x), 
+               area2 = length(x1), 
+               area3 = length(x2), 
+               area4 = length(x3), 
+               n12 = length(Reduce(intersect, list(x,x1))), 
+               n13 = length(Reduce(intersect, list(x,x2))), 
+               n14 = length(Reduce(intersect, list(x,x3))), 
+               n23 = length(Reduce(intersect, list(x1,x2))),
+               n24 = length(Reduce(intersect, list(x1,x3))),
+               n34 = length(Reduce(intersect, list(x2,x3))),
+               n123 = length(Reduce(intersect, list(x,x1,x2))),
+               n124 = length(Reduce(intersect, list(x,x1,x3))),
+               n134 = length(Reduce(intersect, list(x,x2,x3))),
+               n234 = length(Reduce(intersect, list(x1,x2,x3))),
+               n1234 = length(Reduce(intersect, list(x,x1,x2,x3))), 
+               category = c("Amniotes", "Frogs", "Anamniotes", "Vertebrates"))
+grid.draw(venn.plot)
+
 ```

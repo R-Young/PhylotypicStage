@@ -36,8 +36,8 @@ k_optimum<- function (mydata,k,z) {
                                        #centers=i)$withinss)
   #y<-wss
   percent_explained<-c()
-  for (i in 1:k) percent_explained[i] <- (kmeans(Gal.shared.OGG.exp,
-                                                 i))$betweenss/(kmeans(Gal.shared.OGG.exp, 
+  for (i in 1:k) percent_explained[i] <- (kmeans(mydata,
+                                                 i))$betweenss/(kmeans(mydata, 
                                                                        i))$totss
   y<-percent_explained
   return(y)}
@@ -73,7 +73,8 @@ colnames(kmeans_percent_explained)<-c("k=1",
                                       "k=8", 
                                       "k=9", 
                                       "sp")
-
+df<-melt(kmeans_percent_explained)
+colnames(df)<-c("sp", "clusterNum", "PercentExpl")
 
 pdf("k_selection.pdf", useDingbats=FALSE)
 ggplot(data=df, aes(x=clusterNum, 

@@ -8,20 +8,162 @@ This markdown find the subset of genes that are 1:1 orthologs and then looks for
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+Identify the OGGs with only one gene and merge. Pull the species-specific gene names for each OGG. These are the 1:1:1:1:1 othologs. 
 
-All expression data files have this nomenclature format
-drer.all.stages
+```{r One2OneOrthologs}
+library("dplyr")
 
-```{r cars}
-summary(cars)
+#gnerate temp dfs with OGGs in each species with just 1 gene
+x1<-Mus.OGG %>%
+  dplyr::group_by(OrthoGroup) %>% 
+  dplyr::summarise(MusOGGcount=length(MusGene)) %>%  
+  dplyr::filter(MusOGGcount == 1)
+
+x2<-Gal.OGG %>%
+  dplyr::group_by(OrthoGroup) %>% 
+  dplyr::summarise(GalOGGcount=length(GallusGene)) %>% 
+  dplyr::filter(GalOGGcount == 1)
+
+x3<-xlaev.OGG %>%
+  dplyr::group_by(OrthoGroup) %>% 
+  dplyr::summarise(XlaevOGGcount=length(XenopusGene)) %>% 
+  dplyr::filter(XlaevOGGcount == 1)
+
+x4<-xtrop.OGG %>%
+  dplyr::group_by(OrthoGroup) %>% 
+  dplyr::summarise(XtropOGGcount=length(XenopusGene)) %>% 
+  dplyr::filter(XtropOGGcount == 1)
+
+x5<-Dan.OGG %>%
+  dplyr::group_by(OrthoGroup) %>% 
+  dplyr::summarise(DanOGGcount=length(DanioGene)) %>% 
+  dplyr::filter(DanOGGcount == 1)
+
+#merge together filter OGGs to gene 1:1:1:1:1 orthologs with expression data
+x<-Reduce(function(x, y) merge(x, y, all=FALSE),
+                        list(x1,
+                             x2,
+                             x3,
+                             x4,
+                             x5))
+#make character vector of the 1:1:1:1:1 orthologs
+y<-as.character(x$OrthoGroup)
+
+#pull gene names of the 1:1:1:1:1 orthologs and merge to make rosetta stone
+x1<-Mus.OGG %>%
+  dplyr::filter(OrthoGroup %in% y)
+
+x2<-Gal.OGG %>%
+  dplyr::filter(OrthoGroup %in% y)
+
+x3<-xlaev.OGG %>%
+  dplyr::filter(OrthoGroup %in% y)
+colnames(x3)<-c("OrthoGroup", "XlaevGene")
+
+x4<-xtrop.OGG %>%
+  dplyr::filter(OrthoGroup %in% y)
+colnames(x4)<-c("OrthoGroup", "XrtopGene")
+
+x5<-Dan.OGG %>%
+  dplyr::filter(OrthoGroup %in% y)
+
+One2OneOrthologs<-Reduce(function(x, y) merge(x, y, all=FALSE),
+                        list(x1,
+                             x2,
+                             x3,
+                             x4,
+                             x5))
+#clean up temps dfs
+rm(y)
+rm(x)
+rm(x1)
+rm(x2)
+rm(x3)
+rm(x4)
+rm(x5)
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
+filter the species-specific OGG files to contain only those 1:1:1:1:1 othologs. Shared OGG files (e.g. Mus.shared.OGG.exp)
 
 ```{r pressure, echo=FALSE}
-plot(pressure)
+library("dplyr")
+
+#make character vector of the 1:1:1:1:1 orthologs
+y<-as.character(One2OneOrthologs$OrthoGroup)
+
+#generate the One to One ortholog files for each species. 
+Mus.1to1.exp<-Mus.sp.OGG.exp %>%
+  dplyr::select(one_of(y))
+
+Gal.1to1.exp<-Gal.sp.OGG.exp %>%
+  dplyr::select(one_of(y))
+
+Xlaev.1to1.exp<-Xlaev.sp.OGG.exp %>%
+  dplyr::select(one_of(y))
+
+Xtrop.1to1.exp<-Xtrop.sp.OGG.exp %>%
+  dplyr::select(one_of(y))
+
+Dan.1to1.exp<-Dan.sp.OGG.exp %>%
+  dplyr::select(one_of(y))
+
 ```
+
+k_optimum and plot_koptimum from Kmeans_Stages.Rmd likely do not need to be reloaded
+```{r koptimum}
+k_optimum<-function (mydata,k,z) {
+  sp=z
+  #wss <- (nrow(mydata)-1)*sum(apply(mydata,2,var)) #this returns the w/in ss
+  #for (i in 2:k) wss[i] <- sum(kmeans(mydata,
+                                       #centers=i)$withinss)
+  #y<-wss
+  percent_explained<-c()
+  for (i in 1:k) percent_explained[i] <- (kmeans(mydata,
+                                                 i))$betweenss/(kmeans(mydata, 
+                                                                       i))$totss
+  y<-percent_explained
+  return(y)}
+
+plot_koptimum<- function (mydata,k,z) {
+  sp=z
+  wss <- (nrow(mydata)-1)*sum(apply(mydata,2,var))
+  for (i in 2:k) wss[i] <- sum(kmeans(mydata,
+                                       centers=i)$withinss)
+  y<-plot(1:k, wss, type="b", main=sp, xlab="Number of Clusters",
+     ylab="Within groups sum of squares")
+  return(y)}
+```
+
+Performs kmeans cluster of the embryonic stages with Ks 1 to k(in this case 9). Code can be found Kmeans_Stages.Rmd. 
+Kmeans for 1:1:1:1:1 orthologs -- make sure to cut out mouse (TS02, TS03, and TS04 -- due to batch effects) and danio (01c, d05, d14, d30, d90 due to most maternal trancrips for the one cell and post embryogenesis after day 4) Mus.shared.OGG.exp[c(1,5:19),], Dan.shared.OGG.exp[2:11,]
+```{r kmeans1:1}
+x<-rbind.data.frame(k_optimum(Mus.1to1.exp[c(1,5:19),],9, "Mus"),
+                    k_optimum(Gal.shared.OGG.exp,9, "Gallus"),
+                    k_optimum(Xlaev.shared.OGG.exp,9, "X.laevis"),
+                    k_optimum(Xtrop.shared.OGG.exp,9, "X.tropicalis"),
+                    k_optimum(Dan.1to1.exp[2:11,],9, "Danio"))
+row.names(x)<-c("Mus", 
+                "Gallus", 
+                "X.laevis", 
+                "X.tropicalis",
+                "Danio")
+kmeans_1to1_perc_expl<-cbind.data.frame(x,
+                                        sp=row.names(x))
+
+colnames(kmeans_1to1_perc_expl)<-c("k=1", 
+                                   "k=2", 
+                                   "k=3", 
+                                   "k=4", 
+                                   "k=5", 
+                                   "k=6", 
+                                   "k=7", 
+                                   "k=8", 
+                                   "k=9", 
+                                   "sp")
+
+```
+
+
+```{r }
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

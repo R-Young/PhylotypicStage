@@ -722,7 +722,6 @@ apply(OGGcounts_All[,3:6], 1, chisq.test)
 
 
 #cleanup
-rm(list=ls(pattern="percent_hourglass"))
 rm(list=ls(pattern="percent_early"))
 rm(list=ls(pattern="percent_late"))
 rm(list=ls(pattern="percent_inverse"))
@@ -735,18 +734,44 @@ barplots of the evolutionary hypotheses patterns
 library("reshape2")
 library("ggplot2")
 x<-melt(OGGpatterns_All)
-#pdf("test.pdf")
-
-ggplot(x, aes(x=level, y=value, fill=variable))+
-  geom_bar(stat="identity")
+x$variable<-factor(x$variable, levels=c("hourglass", 
+                                        "inverse hourglass", 
+                                        "early conservation",
+                                        "late conservation"))
+#pdf("HypothesisProporation_OGG.pdf")
+ggplot(x, 
+       aes(x=level, 
+           y=value, 
+           fill=variable))+
+  geom_bar(stat="identity", 
+           position = position_fill(reverse = TRUE)) +
+  facet_grid(~`peak spot`) +
+  scale_y_continuous(expand = c(0,0), 
+                     limits = c(0,1)) +
+  theme(axis.text.x=element_text(angle=290,
+                                 hjust=0.1))
 #dev.off()
 
-pdf("allPeakedness.pdf")
-ggplot(x, aes(x=level, y=value, fill=variable))+
+#pdf("HypothesisProportion_allPeakedness.pdf")
+ggplot(x, aes(x=level, 
+              y=value, 
+              fill=variable))+
   geom_boxplot()
-dev.off()
+#dev.off()
 ```
 
+```{r, stats for above hypothesis boxplot}
+library("dplyr")
+level=c("amniote", "frog", "anamiote", "vertebrate")
+for (i in level) { 
+  print(i)
+  data = dplyr::filter(x, level == i) 
+  print(summary(aov(value~variable, 
+            data=data)))
+  print(TukeyHSD(aov(value~variable, 
+             data=data)))
+  }
+```
 
 Calculatign the overlap for a four-way venn
 

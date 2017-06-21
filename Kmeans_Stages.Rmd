@@ -17,8 +17,8 @@ plot_koptimum<- function (mydata,k,z) {
   #y<-plot(1:k, wss, type="b", main=sp, xlab="Number of Clusters",
    #  ylab="Within groups sum of squares")
   percent_explained<-c()
-  for (i in 1:k) percent_explained[i] <- (kmeans(Gal.shared.OGG.exp,
-                                                 i))$betweenss/(kmeans(Gal.shared.OGG.exp, 
+  for (i in 1:k) percent_explained[i] <- (kmeans(mydata,
+                                                 i))$betweenss/(kmeans(mydata, 
                                                                        i))$totss
   y<-plot(1:k, 
           percent_explained, 
@@ -106,7 +106,8 @@ dev.off()
 
 ```{r}
 #mydata=Mus.shared.OGG.exp[c(1,5:19),]
-
+#k=9
+#z="mus"
 kmeans_ALLOGGs_stages<- function (mydata,k,z) {
   kmeans_df <- data.frame() #accumulator for results
   for(i in 2:k){ #run kmeans for all clusters up to 100
@@ -115,7 +116,7 @@ kmeans_ALLOGGs_stages<- function (mydata,k,z) {
   kmeans_df<- rbind(kmeans_df, rbind(clusterID$cluster)) 
   }
   kmeans_df<-rbind.data.frame(kmeans_df, timepoint=colnames(kmeans_df))
-  row.names(kmeans_df)<-c(3:k, "timepoint")
+  row.names(kmeans_df)<-c(2:k, "timepoint")
   kmeans_df<-cbind.data.frame(kmeans_df, sp=rep(z, k))
   return(kmeans_df) }
 

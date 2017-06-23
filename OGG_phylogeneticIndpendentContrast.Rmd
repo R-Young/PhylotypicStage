@@ -738,7 +738,7 @@ x$variable<-factor(x$variable, levels=c("hourglass",
                                         "inverse hourglass", 
                                         "early conservation",
                                         "late conservation"))
-#pdf("HypothesisProporation_OGG.pdf")
+#pdf("HypothesisProporation_OGG.pdf", useDingbats = FALSE)
 ggplot(x, 
        aes(x=level, 
            y=value, 
@@ -752,7 +752,7 @@ ggplot(x,
                                  hjust=0.1))
 #dev.off()
 
-#pdf("HypothesisProportion_allPeakedness.pdf")
+#pdf("HypothesisProportion_allPeakedness_OGG.pdf", useDingbats = FALSE)
 ggplot(x, aes(x=level, 
               y=value, 
               fill=variable))+

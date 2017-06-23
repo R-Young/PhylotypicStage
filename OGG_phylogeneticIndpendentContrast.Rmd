@@ -47,8 +47,8 @@ VertebrateOGGRank_contrast_clust5<-(abs((MusOGGRank_clust5/4 +
                                  DanOGGRank_clust5)/
                                   sqrt(79+432))
 ```
-Cluster correlations of the Contrast dataframes
 
+Cluster correlations of the Contrast dataframes
 Add an additional all PW with pearson compute all pairwise correlaton
 ```{r PearsonCor_AllPW, eval=FALSE}
 PWstageCor_Pearson<-function(x,y) {

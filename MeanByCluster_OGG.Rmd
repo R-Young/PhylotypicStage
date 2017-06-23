@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 To compare rank correlations in gene expression across species at different time points (early, middle, late) we have to first collapse the within species variation to one score per OGG for each species,timestep(k). SpeciesClustmeanWI
 
 ```{r}
-#a=Xlaev.interspecificNORM.avgOGG
+#a=
 #a1=Xlaev_clusterID
 #k=3
 

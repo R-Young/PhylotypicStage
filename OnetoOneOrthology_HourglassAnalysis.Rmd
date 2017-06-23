@@ -8,11 +8,15 @@ This markdown find the subset of genes that are 1:1 orthologs and then looks for
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+```{r load_packages}
+library("dplyr")
+library("ggplot2")
+library("reshape2")
+```
 Identify the OGGs with only one gene and merge. Pull the species-specific gene names for each OGG. These are the 1:1:1:1:1 othologs. 
 
 ```{r One2OneOrthologs}
-library("dplyr")
-
 #gnerate temp dfs with OGGs in each species with just 1 gene
 x1<-Mus.OGG %>%
   dplyr::group_by(OrthoGroup) %>% 
@@ -86,8 +90,6 @@ rm(x5)
 filter the species-specific OGG files to contain only those 1:1:1:1:1 othologs. Shared OGG files (e.g. Mus.shared.OGG.exp)
 
 ```{r pressure, echo=FALSE}
-library("dplyr")
-
 #make character vector of the 1:1:1:1:1 orthologs
 y<-as.character(One2OneOrthologs$OrthoGroup)
 
@@ -106,6 +108,8 @@ Xtrop.1to1.exp<-Xtrop.sp.OGG.exp %>%
 
 Dan.1to1.exp<-Dan.sp.OGG.exp %>%
   dplyr::select(one_of(y))
+
+rm(y)
 
 ```
 
@@ -138,9 +142,9 @@ Performs kmeans cluster of the embryonic stages with Ks 1 to k(in this case 9). 
 Kmeans for 1:1:1:1:1 orthologs -- make sure to cut out mouse (TS02, TS03, and TS04 -- due to batch effects) and danio (01c, d05, d14, d30, d90 due to most maternal trancrips for the one cell and post embryogenesis after day 4) Mus.shared.OGG.exp[c(1,5:19),], Dan.shared.OGG.exp[2:11,]
 ```{r kmeans1:1}
 x<-rbind.data.frame(k_optimum(Mus.1to1.exp[c(1,5:19),],9, "Mus"),
-                    k_optimum(Gal.shared.OGG.exp,9, "Gallus"),
-                    k_optimum(Xlaev.shared.OGG.exp,9, "X.laevis"),
-                    k_optimum(Xtrop.shared.OGG.exp,9, "X.tropicalis"),
+                    k_optimum(Gal.1to1.exp,9, "Gallus"),
+                    k_optimum(Xlaev.1to1.exp,9, "X.laevis"),
+                    k_optimum(Xtrop.1to1.exp,9, "X.tropicalis"),
                     k_optimum(Dan.1to1.exp[2:11,],9, "Danio"))
 row.names(x)<-c("Mus", 
                 "Gallus", 
@@ -164,6 +168,1087 @@ colnames(kmeans_1to1_perc_expl)<-c("k=1",
 ```
 
 
-```{r }
+```{r plot_koptimum1to1}
+df<-melt(kmeans_1to1_perc_expl)
+colnames(df)<-c("sp", "clusterNum", "PercentExpl")
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+#pdf("k_selection1to1.pdf", useDingbats=FALSE)
+ggplot(data=df, aes(x=clusterNum, 
+                    y=PercentExpl, 
+                    group = sp, 
+                    colour = sp)) +
+    geom_line() +
+    geom_point( size=4, 
+                shape=21)+
+    theme_bw()+ theme(panel.border = element_blank(), 
+                      plot.background = element_blank(),
+                    panel.grid.major=element_blank(), 
+                    panel.grid.minor=element_blank()) + 
+    theme(axis.line.x =element_line(color = "black"))+
+    theme(axis.line.y =element_line(color = "black"))+
+    labs(x="cluster number", 
+         y="proportion of variance exprlained")
+#dev.off()
+```
+
+kmeans_1to1_stages is edited from kmeans_ALLOGGs_stages was writen in Kmeans_Stages.Rmd. It works to generate the clusters, but has a BIG problem in that cluster order does not strictly follow developmental order... still working on that
+
+```{r}
+#mydata=Mus.shared.OGG.exp[c(1,5:19),]
+#k=5
+#z="mus"
+kmeans_1to1_stages<- function (mydata,k,z) {
+  kmeans_df <- data.frame() #accumulator for results
+  for(i in 3:k){ #run kmeans for all clusters up to 100
+  clusterID<-kmeans(x=mydata, 
+                    centers=i)  #Run kmeans for each level of i
+  #Combine cluster number and cost together, write to df
+  kmeans_df<- rbind(kmeans_df, 
+                    rbind(clusterID$cluster)) 
+  }
+  kmeans_df<-rbind.data.frame(rep(z, 
+                                  ncol(kmeans_df)), 
+                                  timepoint=colnames(kmeans_df), 
+                                  kmeans_df)
+  colnames(kmeans_df)<-NA
+  row.names(kmeans_df)<-c("species", "timepoint", 3:k)
+  kmeans_df<-t(kmeans_df)
+  return(kmeans_df) }
+
+#mus start rearranging order at k=6 
+#Very important: this does not enforce that cluster 1 is the earliest cluster. This has to be adjusted!, currently by hans!! 
+x<-kmeans_1to1_stages(Mus.1to1.exp[c(1,5:19),], 5, "Mus")
+write.csv(x, "x", col.names=TRUE, row.names = FALSE)
+#Mus_1to1_clusterID<-read.csv("x",  header = TRUE, sep=",")
+
+x<-kmeans_1to1_stages(Gal.1to1.exp, 5, "Gallus")
+write.csv(x, "x", col.names=TRUE, row.names = FALSE)
+#Gallus_1to1_clusterID<-read.csv("x",  header = TRUE, sep=",")
+
+x<-kmeans_1to1_stages(Dan.1to1.exp[2:11,], 5, "Danio")
+write.csv(x, "x", col.names=TRUE, row.names = FALSE)
+#Danio_1to1_clusterID<-read.csv("x",  header = TRUE, sep=",")
+
+x<-kmeans_1to1_stages(Xlaev.1to1.exp, 5, "X. laevis")
+write.csv(x, "x", col.names=TRUE, row.names = FALSE)
+#Xlaev_1to1_clusterID<-read.csv("x",  header = TRUE, sep=",")
+
+x<-kmeans_1to1_stages(Xtrop.1to1.exp, 5, "X. tropicalis")
+write.csv(x, "x", col.names=TRUE, row.names = FALSE)
+#Xtrop_1to1_clusterID<-read.csv("x",  header = TRUE, sep=",")
+
+rm(x)
+```
+
+Mean by time cluster for 1 to 1 orthologs SpeciesClustermeanWI (function) from MeanByCluster_OGG.Rmd
+
+```{r cluster_means}
+
+#SpeciesClustmeanWI<-function(a, a1, k){
+#a1<-a1[,c(1,2,k)]
+#colnames(a1)=c("species", "timepoint", "k")
+#a=cbind.data.frame(a, timepoint=a1$timepoint)
+#ak=merge(a1, a, by='timepoint', all=FALSE)
+#ak=ak[,-c(1:2)]
+#ak1= plyr::ddply(data.frame(ak),  "k", plyr::numcolwise(mean))
+#ak1=ak1[,-1]
+#return(ak1)
+#}
+
+Mus_1to1_MeanBYclust5<-SpeciesClustmeanWI(Mus.1to1.exp[-c(2:4),], 
+                                    Mus_1to1_clusterID, 5)
+Gal_1to1_MeanBYclust5<-SpeciesClustmeanWI(Gal.1to1.exp, 
+                                    Gallus_1to1_clusterID, 5)
+Dan_1to1_MeanBYclust5<-SpeciesClustmeanWI(Dan.1to1.exp[-c(1,12:15),], 
+                                    Danio_1to1_clusterID, 5)
+Xlaev_1to1_MeanBYclust5<-SpeciesClustmeanWI(Xlaev.1to1.exp, 
+                                      Xlaev_1to1_clusterID, 5)
+Xtrop_1to1_MeanBYclust5<-SpeciesClustmeanWI(Xtrop.1to1.exp, 
+                                      Xtrop_1to1_clusterID, 5)
+```
+Calculate all pairwise comparisons of the k cluster across species including only 1 to 1 orthologs
+```{r pairwise_1to1}
+
+All_1to1_ClustCor5<-rbind.data.frame(diag(PWstageCor(Mus_1to1_MeanBYclust5, Gal_1to1_MeanBYclust5)), 
+                 diag(PWstageCor(Mus_1to1_MeanBYclust5, Dan_1to1_MeanBYclust5)),
+                 diag(PWstageCor(Mus_1to1_MeanBYclust5, Xlaev_1to1_MeanBYclust5)),
+                 diag(PWstageCor(Mus_1to1_MeanBYclust5, Xtrop_1to1_MeanBYclust5)),
+                 diag(PWstageCor(Gal_1to1_MeanBYclust5, Dan_1to1_MeanBYclust5)),
+                 diag(PWstageCor(Gal_1to1_MeanBYclust5, Xlaev_1to1_MeanBYclust5)),
+                 diag(PWstageCor(Gal_1to1_MeanBYclust5, Xtrop_1to1_MeanBYclust5)),
+                 diag(PWstageCor(Dan_1to1_MeanBYclust5, Xlaev_1to1_MeanBYclust5)),
+                 diag(PWstageCor(Dan_1to1_MeanBYclust5, Xtrop_1to1_MeanBYclust5)),
+                 diag(PWstageCor(Xtrop_1to1_MeanBYclust5, Xlaev_1to1_MeanBYclust5)))
+colnames(All_1to1_ClustCor5)<-c("cluster1", "cluster2", "cluster3", "cluster4", "cluster5")
+rownames(All_1to1_ClustCor5)<-c("MusGal", "MusDan", "MusXlaev", "MusXtrop", "GalDan",
+                          "GalXlaev", "GalXtrop", "XlaevDan", "XtropDan", 
+                          "XlaevXtrop")
+
+All_1to1_ClustCor5Nolaevis<-All_1to1_ClustCor5[-c(3,6,8,10),]
+All_1to1_ClustCor5_Notrop<-All_1to1_ClustCor5[-c(4,7,9:10),]
+
+```
+
+box_RankCor_clust function is from MeanByCluster_OGG.Rmd
+```{r hourglass_plot }
+#pdf("All_1to1_ClustCor.pdf", useDingbats = FALSE)
+box_RankCor_clust(All_1to1_ClustCor5)
+box_RankCor_clust(All_1to1_ClustCor5Nolaevis)
+box_RankCor_clust(All_1to1_ClustCor5_Notrop)
+#dev.off()
+
+```
+These approaches to testing the hourglass were originally written to use with OGGs in QuadraticModel_TimeCluster_GeneCorrelation.Rmd and MeanByCluster_OGG.Rmd
+```{r hourglass_tests}
+
+x=melt(All_1to1_ClustCor5)
+lm.out=lm(value ~ as.numeric(x$variable) + I(as.numeric(x$variable)^2), data=x)
+x=summary(lm.out)
+lm_All_1to1_ClustCor5=data.frame(x$coefficients)
+
+x=melt(All_1to1_ClustCor5Nolaevis)
+lm.out=lm(value ~ as.numeric(x$variable) + I(as.numeric(x$variable)^2), data=x)
+x=summary(lm.out)
+lm_All_1to1_ClustCor5Nolaevis=data.frame(x$coefficients)
+
+x=melt(All_1to1_ClustCor5_Notrop)
+lm.out=lm(value ~ as.numeric(x$variable) + I(as.numeric(x$variable)^2), data=x)
+x=summary(lm.out)
+lm_All_1to1_ClustCor5Notrop=data.frame(x$coefficients)
+
+
+
+x=(All_1to1_ClustCor5)
+y=nrow(x)
+k1<-data.frame(x$cluster1)
+colnames(k1)<-"k"
+k2<-data.frame(x$cluster2)
+colnames(k2)<-"k"
+k3<-data.frame(x$cluster3)
+colnames(k3)<-"k"
+k4<-data.frame(x$cluster4)
+colnames(k4)<-"k"
+k5<-data.frame(x$cluster5)
+colnames(k5)<-"k"
+k=rbind.data.frame(k1,
+                   k2,
+                   k3,
+                   k4,
+                   k5)
+time<-data.frame(rep(c("k1",
+                       "k2",
+                       "k3",
+                       "k4",
+                       "k5"), 
+                     c(y,
+                       y,
+                       y,
+                       y,
+                       y)))
+k5all=cbind.data.frame(time,
+                       k)
+colnames(k5all)<-c("time",
+                   "k")
+
+summary(aov(k~time, 
+            data=k5all))
+TukeyHSD(aov(k~time, 
+             data=k5all))
+
+x=(All_1to1_ClustCor5Nolaevis)
+y=nrow(x)
+k1<-data.frame(x$cluster1)
+colnames(k1)<-"k"
+k2<-data.frame(x$cluster2)
+colnames(k2)<-"k"
+k3<-data.frame(x$cluster3)
+colnames(k3)<-"k"
+k4<-data.frame(x$cluster4)
+colnames(k4)<-"k"
+k5<-data.frame(x$cluster5)
+colnames(k5)<-"k"
+k=rbind.data.frame(k1,
+                   k2,
+                   k3,
+                   k4,
+                   k5)
+time<-data.frame(rep(c("k1",
+                       "k2",
+                       "k3",
+                       "k4",
+                       "k5"), 
+                     c(y,
+                       y,
+                       y,
+                       y,
+                       y)))
+k5all=cbind.data.frame(time,
+                       k)
+colnames(k5all)<-c("time",
+                   "k")
+
+summary(aov(k~time, 
+            data=k5all))
+TukeyHSD(aov(k~time, 
+             data=k5all))
+```
+
+The following analysis are from 
+```{r IndependedContrast}
+#generate species by cluster RANKs for all OGGs
+# "-" on the matrix gives descending order, highest rank lowest expression
+Mus_1to1_Rank_clust5<-data.frame(t(apply(-Mus_1to1_MeanBYclust5, 1, rank))) 
+Gal_1to1_Rank_clust5<-data.frame(t(apply(-Gal_1to1_MeanBYclust5, 1, rank))) 
+Xlaev_1to1_Rank_clust5<-data.frame(t(apply(-Xlaev_1to1_MeanBYclust5, 1, rank))) 
+Xtrop_1to1_Rank_clust5<-data.frame(t(apply(-Xtrop_1to1_MeanBYclust5, 1, rank))) 
+Dan_1to1_Rank_clust5<-data.frame(t(apply(-Dan_1to1_MeanBYclust5, 1, rank))) 
+
+#For each node look at the difference in OGG rank correct by summed branch lengths:
+#abs(RANKsp1-RANKsp2)/(branch length 1 + branch length 2)
+#branch length are median time estimates from time tree. 
+Amniote_1to1_Rank_contrast_clust5<-(abs(Mus_1to1_Rank_clust5 - 
+                          Gal_1to1_Rank_clust5))/sqrt(320+320)
+Frog_1to1_Rank_contrast_clust5<-(abs(Xlaev_1to1_Rank_clust5 - 
+                       Xtrop_1to1_Rank_clust5))/sqrt(52+52)
+
+Anamniote_1to1_Rank_contrast_clust5<-(abs((Mus_1to1_Rank_clust5/2 + 
+                                Gal_1to1_Rank_clust5/2) - 
+                              (Xlaev_1to1_Rank_clust5/2 + 
+                                 Xtrop_1to1_Rank_clust5/2))/
+                                sqrt(35+301))
+
+Vertebrate_1to1_Rank_contrast_clust5<-(abs((Mus_1to1_Rank_clust5/4 + 
+                                Gal_1to1_Rank_clust5/4 + 
+                                Xlaev_1to1_Rank_clust5/4 + 
+                                 Xtrop_1to1_Rank_clust5/4) -
+                                 Dan_1to1_Rank_clust5)/
+                                  sqrt(79+432))
+```
+Cluster correlations of the Contrast dataframes
+
+Add an additional all PW with pearson compute all pairwise correlaton
+Original function in OGG_phylogeneticIndependentContrast.Rmd
+```{r PhyloContratst_correlations}
+PhyContrast_1to1_ClustCor5<-rbind.data.frame(diag(PWstageCor_Pearson(Amniote_1to1_Rank_contrast_clust5,
+                                                       Frog_1to1_Rank_contrast_clust5)),
+                                       diag(PWstageCor_Pearson(Amniote_1to1_Rank_contrast_clust5, 
+                                                       Anamniote_1to1_Rank_contrast_clust5)),
+                                       diag(PWstageCor_Pearson(Amniote_1to1_Rank_contrast_clust5,
+                                                       Vertebrate_1to1_Rank_contrast_clust5)),
+                                       diag(PWstageCor_Pearson(Frog_1to1_Rank_contrast_clust5,
+                                                       Anamniote_1to1_Rank_contrast_clust5)),
+                                       diag(PWstageCor_Pearson(Frog_1to1_Rank_contrast_clust5,
+                                                       Vertebrate_1to1_Rank_contrast_clust5)),
+                                       diag(PWstageCor_Pearson(Anamniote_1to1_Rank_contrast_clust5,
+                                                       Vertebrate_1to1_Rank_contrast_clust5)))
+colnames(PhyContrast_1to1_ClustCor5)<-c("cluster1", 
+                                  "cluster2", 
+                                  "cluster3", 
+                                  "cluster4", 
+                                  "cluster5")
+rownames(PhyContrast_1to1_ClustCor5)<-c("Amniote_Frog", 
+                                  "Amniote_Anamniote", 
+                                  "Amniote_Vertebrate", 
+                                  "Frog_Anamniote", 
+                                  "Frog_Vertebrate",
+                                  "Anamniote_Vertebrate")
+
+##############################################RANK
+
+PhyContrast_1to1_ClustCor5_Rank<-rbind.data.frame(diag(PWstageCor(Amniote_1to1_Rank_contrast_clust5,
+                                                       Frog_1to1_Rank_contrast_clust5)),
+                                       diag(PWstageCor(Amniote_1to1_Rank_contrast_clust5, 
+                                                       Anamniote_1to1_Rank_contrast_clust5)),
+                                       diag(PWstageCor(Amniote_1to1_Rank_contrast_clust5,
+                                                       Vertebrate_1to1_Rank_contrast_clust5)),
+                                       diag(PWstageCor(Frog_1to1_Rank_contrast_clust5,
+                                                       Anamniote_1to1_Rank_contrast_clust5)),
+                                       diag(PWstageCor(Frog_1to1_Rank_contrast_clust5,
+                                                       Vertebrate_1to1_Rank_contrast_clust5)),
+                                       diag(PWstageCor(Anamniote_1to1_Rank_contrast_clust5,
+                                                       Vertebrate_1to1_Rank_contrast_clust5)))
+colnames(PhyContrast_1to1_ClustCor5_Rank)<-c("cluster1", 
+                                  "cluster2", 
+                                  "cluster3", 
+                                  "cluster4", 
+                                  "cluster5")
+rownames(PhyContrast_1to1_ClustCor5_Rank)<-c("Amniote_Frog", 
+                                  "Amniote_Anamniote", 
+                                  "Amniote_Vertebrate", 
+                                  "Frog_Anamniote", 
+                                  "Frog_Vertebrate",
+                                  "Anamniote_Vertebrate")
+
+
+#########################################WITHOUT FROG CONTRAST
+PhyContrast_1to1_ClustCor5_noFrogs<-rbind.data.frame(diag(PWstageCor_Pearson(Amniote_1to1_Rank_contrast_clust5, 
+                                                       Anamniote_1to1_Rank_contrast_clust5)),
+                                       diag(PWstageCor_Pearson(Amniote_1to1_Rank_contrast_clust5,
+                                                       Vertebrate_1to1_Rank_contrast_clust5)),
+                                       diag(PWstageCor_Pearson(Anamniote_1to1_Rank_contrast_clust5,
+                                                       Vertebrate_1to1_Rank_contrast_clust5)))
+colnames(PhyContrast_1to1_ClustCor5_noFrogs)<-c("cluster1", 
+                                  "cluster2", 
+                                  "cluster3", 
+                                  "cluster4", 
+                                  "cluster5")
+rownames(PhyContrast_1to1_ClustCor5_noFrogs)<-c( "Amniote_Anamniote", 
+                                  "Amniote_Vertebrate", 
+                                  "Anamniote_Vertebrate")
+
+
+```
+
+plot box_RankCor_clust is from MeanByCluster_OGG.Rmd
+```{r box_plots}
+#pdf("PhyloContrast_1to1_hourglass.pdf", useDingbats = FALSE)
+#PhyRankCor<-
+  box_RankCor_clust(PhyContrast_1to1_ClustCor5)
+#PhyPearsCor<-
+  box_RankCor_clust(PhyContrast_1to1_ClustCor5_Rank)
+  box_RankCor_clust(PhyContrast_1to1_ClustCor5_noFrogs)
+#dev.off()
+```
+
+perform stats on the contrasted data
+```{r Stats}
+x=(PhyContrast_1to1_ClustCor5)
+y=nrow(x)
+k1<-data.frame(x$cluster1)
+colnames(k1)<-"k"
+k2<-data.frame(x$cluster2)
+colnames(k2)<-"k"
+k3<-data.frame(x$cluster3)
+colnames(k3)<-"k"
+k4<-data.frame(x$cluster4)
+colnames(k4)<-"k"
+k5<-data.frame(x$cluster5)
+colnames(k5)<-"k"
+k=rbind.data.frame(k1,
+                   k2,
+                   k3,
+                   k4,
+                   k5)
+time<-data.frame(rep(c("k1",
+                       "k2",
+                       "k3",
+                       "k4",
+                       "k5"), 
+                     c(y,
+                       y,
+                       y,
+                       y,
+                       y)))
+k5all=cbind.data.frame(time,
+                       k)
+colnames(k5all)<-c("time",
+                   "k")
+
+summary(aov(k~time, 
+            data=k5all))
+TukeyHSD(aov(k~time, 
+             data=k5all))
+
+
+##################
+x=(PhyContrast_1to1_ClustCor5_Rank)
+y=nrow(x)
+k1<-data.frame(x$cluster1)
+colnames(k1)<-"k"
+k2<-data.frame(x$cluster2)
+colnames(k2)<-"k"
+k3<-data.frame(x$cluster3)
+colnames(k3)<-"k"
+k4<-data.frame(x$cluster4)
+colnames(k4)<-"k"
+k5<-data.frame(x$cluster5)
+colnames(k5)<-"k"
+k=rbind.data.frame(k1,
+                   k2,
+                   k3,
+                   k4,
+                   k5)
+time<-data.frame(rep(c("k1",
+                       "k2",
+                       "k3",
+                       "k4",
+                       "k5"), 
+                     c(y,
+                       y,
+                       y,
+                       y,
+                       y)))
+k5all=cbind.data.frame(time,
+                       k)
+colnames(k5all)<-c("time",
+                   "k")
+
+summary(aov(k~time, 
+            data=k5all))
+TukeyHSD(aov(k~time, 
+             data=k5all))
+
+
+#################################No Frogs
+x=(PhyContrast_1to1_ClustCor5_noFrogs)
+y=nrow(x)
+k1<-data.frame(x$cluster1)
+colnames(k1)<-"k"
+k2<-data.frame(x$cluster2)
+colnames(k2)<-"k"
+k3<-data.frame(x$cluster3)
+colnames(k3)<-"k"
+k4<-data.frame(x$cluster4)
+colnames(k4)<-"k"
+k5<-data.frame(x$cluster5)
+colnames(k5)<-"k"
+k=rbind.data.frame(k1,
+                   k2,
+                   k3,
+                   k4,
+                   k5)
+time<-data.frame(rep(c("k1",
+                       "k2",
+                       "k3",
+                       "k4",
+                       "k5"), 
+                     c(y,
+                       y,
+                       y,
+                       y,
+                       y)))
+k5all=cbind.data.frame(time,
+                       k)
+colnames(k5all)<-c("time",
+                   "k")
+
+summary(aov(k~time, 
+            data=k5all))
+TukeyHSD(aov(k~time, 
+             data=k5all))
+```
+Finding OGGs that follow an hourglass... Look for "peakedness" the expression trajectory
+
+```{r percentBYhypo, eval=TRUE}
+row.names(Amniote_1to1_Rank_contrast_clust5)<-c("cluster1", 
+                                             "cluster2",
+                                             "cluster3",
+                                             "cluster4",
+                                             "cluster5")
+x=data.frame(t(Amniote_1to1_Rank_contrast_clust5))
+row.names(x)<-colnames(Amniote_1to1_Rank_contrast_clust5)
+Amniote1to1_contrast_clust5_peakedness=dplyr::mutate(x,
+                                              Peak3_fromEarly=(cluster1 + cluster2)/2 - cluster3) %>%
+  dplyr::mutate(Peak3_fromLate=(cluster4 + cluster5)/2 - cluster3) %>%
+  dplyr::mutate(Peak2_fromEarly= cluster1 - cluster2) %>%
+  dplyr::mutate(Peak2_fromLate= (cluster3 + cluster4 + cluster5)/3 - cluster2) %>%
+  dplyr::mutate(Peak4_fromEarly= (cluster1 + cluster2 + cluster3)/3 - cluster4) %>%
+  dplyr::mutate(Peak4_fromLate= cluster5 - cluster4) %>%
+  dplyr::mutate(PeakMID_fromEarly= cluster1 - (cluster2 + cluster3 + cluster4)/3) %>%
+  dplyr::mutate(PeakMID_fromLate= cluster5 - (cluster2 + cluster3 + cluster4)/3) %>%
+  dplyr::mutate(PeakMID2_3_fromEarly= cluster1 - (cluster2 + cluster3)/2) %>%
+  dplyr::mutate(PeakMID2_3_fromLate= (cluster4 + cluster5)/2 - (cluster2 + cluster3)/2) %>%
+  dplyr::mutate(PeakMID3_4_fromEarly= (cluster1 +cluster2)/2 - (cluster3 + cluster4)/2) %>%
+  dplyr::mutate(PeakMID3_4_fromLate= cluster5 - (cluster3 + cluster4)/2) %>%
+  dplyr::mutate(Name=row.names(x)) %>%
+  dplyr::mutate(Level=rep("Amniote", 
+                          length(Amniote_1to1_Rank_contrast_clust5)))
+
+#hourglass<-which(Amniote1to1_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  #
+  #             Amniote1to1_contrast_clust5_peakedness$Peak3_fromLate > 0)
+
+#Amniote hourglass
+length(which(Amniote1to1_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  
+               Amniote1to1_contrast_clust5_peakedness$Peak3_fromLate > 0))/length(Amniote1to1_contrast_clust5_peakedness$Peak3_fromEarly)
+#Amniote inverse hourglass
+length(which(Amniote1to1_contrast_clust5_peakedness$Peak3_fromEarly < 0 &  
+               Amniote1to1_contrast_clust5_peakedness$Peak3_fromLate < 0))/length(Amniote1to1_contrast_clust5_peakedness$Peak3_fromEarly)
+#Amniote early conservation
+length(which(Amniote1to1_contrast_clust5_peakedness$Peak3_fromEarly < 0 &  
+               Amniote1to1_contrast_clust5_peakedness$Peak3_fromLate > 0))/length(Amniote1to1_contrast_clust5_peakedness$Peak3_fromEarly)
+#Amniote late convergence
+length(which(Amniote1to1_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  
+               Amniote1to1_contrast_clust5_peakedness$Peak3_fromLate < 0))/length(Amniote1to1_contrast_clust5_peakedness$Peak3_fromEarly)
+
+##################Frog Contrast
+row.names(Frog_1to1_Rank_contrast_clust5)<-c("cluster1", 
+                                             "cluster2",
+                                             "cluster3",
+                                             "cluster4",
+                                             "cluster5")
+x=data.frame(t(Frog_1to1_Rank_contrast_clust5))
+row.names(x)<-colnames(Frog_1to1_Rank_contrast_clust5)
+Frog1to1_contrast_clust5_peakedness=dplyr::mutate(x,
+                                              Peak3_fromEarly=(cluster1 + cluster2)/2 - cluster3) %>%
+  dplyr::mutate(Peak3_fromLate=(cluster4 + cluster5)/2 - cluster3) %>%
+  dplyr::mutate(Peak2_fromEarly= cluster1 - cluster2) %>%
+  dplyr::mutate(Peak2_fromLate= (cluster3 + cluster4 + cluster5)/3 - cluster2) %>%
+  dplyr::mutate(Peak4_fromEarly= (cluster1 + cluster2 + cluster3)/3 - cluster4) %>%
+  dplyr::mutate(Peak4_fromLate= cluster5 - cluster4) %>%
+  dplyr::mutate(PeakMID_fromEarly= cluster1 - (cluster2 + cluster3 + cluster4)/3) %>%
+  dplyr::mutate(PeakMID_fromLate= cluster5 - (cluster2 + cluster3 + cluster4)/3) %>%
+  dplyr::mutate(PeakMID2_3_fromEarly= cluster1 - (cluster2 + cluster3)/2) %>%
+  dplyr::mutate(PeakMID2_3_fromLate= (cluster4 + cluster5)/2 - (cluster2 + cluster3)/2) %>%
+  dplyr::mutate(PeakMID3_4_fromEarly= (cluster1 +cluster2)/2 - (cluster3 + cluster4)/2) %>%
+  dplyr::mutate(PeakMID3_4_fromLate= cluster5 - (cluster3 + cluster4)/2) %>%
+  dplyr::mutate(Name=row.names(x)) %>%
+  dplyr::mutate(Level=rep("Frogs", 
+                          length(Frog_1to1_Rank_contrast_clust5)))
+
+#Frog hourglass
+length(which(Frog1to1_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  
+               Frog1to1_contrast_clust5_peakedness$Peak3_fromLate > 0))/length(Frog1to1_contrast_clust5_peakedness$Peak3_fromEarly)
+#Frog inverse hourglass
+length(which(Frog1to1_contrast_clust5_peakedness$Peak3_fromEarly < 0 &  
+               Frog1to1_contrast_clust5_peakedness$Peak3_fromLate < 0))/length(Frog1to1_contrast_clust5_peakedness$Peak3_fromEarly)
+#Frog early conservation
+length(which(Frog1to1_contrast_clust5_peakedness$Peak3_fromEarly < 0 &  
+               Frog1to1_contrast_clust5_peakedness$Peak3_fromLate > 0))/length(Frog1to1_contrast_clust5_peakedness$Peak3_fromEarly)
+#Frog late convergence
+length(which(Frog1to1_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  
+               Frog1to1_contrast_clust5_peakedness$Peak3_fromLate < 0))/length(Frog1to1_contrast_clust5_peakedness$Peak3_fromEarly)
+
+
+#################Anamniote Contrast
+row.names(Anamniote_1to1_Rank_contrast_clust5)<-c("cluster1", 
+                                             "cluster2",
+                                             "cluster3",
+                                             "cluster4",
+                                             "cluster5")
+x=data.frame(t(Anamniote_1to1_Rank_contrast_clust5))
+row.names(x)<-colnames(Anamniote_1to1_Rank_contrast_clust5)
+Anamniote1to1_contrast_clust5_peakedness=dplyr::mutate(x,
+                                              Peak3_fromEarly=(cluster1 + cluster2)/2 - cluster3) %>%
+  dplyr::mutate(Peak3_fromLate=(cluster4 + cluster5)/2 - cluster3) %>%
+  dplyr::mutate(Peak2_fromEarly= cluster1 - cluster2) %>%
+  dplyr::mutate(Peak2_fromLate= (cluster3 + cluster4 + cluster5)/3 - cluster2) %>%
+  dplyr::mutate(Peak4_fromEarly= (cluster1 + cluster2 + cluster3)/3 - cluster4) %>%
+  dplyr::mutate(Peak4_fromLate= cluster5 - cluster4) %>%
+  dplyr::mutate(PeakMID_fromEarly= cluster1 - (cluster2 + cluster3 + cluster4)/3) %>%
+  dplyr::mutate(PeakMID_fromLate= cluster5 - (cluster2 + cluster3 + cluster4)/3) %>%
+  dplyr::mutate(PeakMID2_3_fromEarly= cluster1 - (cluster2 + cluster3)/2) %>%
+  dplyr::mutate(PeakMID2_3_fromLate= (cluster4 + cluster5)/2 - (cluster2 + cluster3)/2) %>%
+  dplyr::mutate(PeakMID3_4_fromEarly= (cluster1 +cluster2)/2 - (cluster3 + cluster4)/2) %>%
+  dplyr::mutate(PeakMID3_4_fromLate= cluster5 - (cluster3 + cluster4)/2) %>%
+  dplyr::mutate(Name=row.names(x)) %>%
+  dplyr::mutate(Level=rep("Anamniote", 
+                          length(Anamniote_1to1_Rank_contrast_clust5)))
+
+
+#Anamniote hourglass
+length(which(Anamniote1to1_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  
+               Anamniote1to1_contrast_clust5_peakedness$Peak3_fromLate > 0))/length(Anamniote1to1_contrast_clust5_peakedness$Peak3_fromEarly)
+#Anamniote inverse hourglass
+length(which(Anamniote1to1_contrast_clust5_peakedness$Peak3_fromEarly < 0 &  
+               Anamniote1to1_contrast_clust5_peakedness$Peak3_fromLate < 0))/length(Anamniote1to1_contrast_clust5_peakedness$Peak3_fromEarly)
+#Anamniote early conservation
+length(which(Anamniote1to1_contrast_clust5_peakedness$Peak3_fromEarly < 0 &  
+               Anamniote1to1_contrast_clust5_peakedness$Peak3_fromLate > 0))/length(Anamniote1to1_contrast_clust5_peakedness$Peak3_fromEarly)
+#Anamniote late convergence
+length(which(Anamniote1to1_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  
+               Anamniote1to1_contrast_clust5_peakedness$Peak3_fromLate < 0))/length(Anamniote1to1_contrast_clust5_peakedness$Peak3_fromEarly)
+
+
+#################Vertebrate Contrast
+row.names(Vertebrate_1to1_Rank_contrast_clust5)<-c("cluster1", 
+                                             "cluster2",
+                                             "cluster3",
+                                             "cluster4",
+                                             "cluster5")
+x=data.frame(t(Vertebrate_1to1_Rank_contrast_clust5))
+row.names(x)<-colnames(Vertebrate_1to1_Rank_contrast_clust5)
+Vertebrate1to1_contrast_clust5_peakedness=dplyr::mutate(x,
+                                              Peak3_fromEarly=(cluster1 + cluster2)/2 - cluster3) %>%
+  dplyr::mutate(Peak3_fromLate=(cluster4 + cluster5)/2 - cluster3) %>%
+  dplyr::mutate(Peak2_fromEarly= cluster1 - cluster2) %>%
+  dplyr::mutate(Peak2_fromLate= (cluster3 + cluster4 + cluster5)/3 - cluster2) %>%
+  dplyr::mutate(Peak4_fromEarly= (cluster1 + cluster2 + cluster3)/3 - cluster4) %>%
+  dplyr::mutate(Peak4_fromLate= cluster5 - cluster4) %>%
+  dplyr::mutate(PeakMID_fromEarly= cluster1 - (cluster2 + cluster3 + cluster4)/3) %>%
+  dplyr::mutate(PeakMID_fromLate= cluster5 - (cluster2 + cluster3 + cluster4)/3) %>%
+  dplyr::mutate(PeakMID2_3_fromEarly= cluster1 - (cluster2 + cluster3)/2) %>%
+  dplyr::mutate(PeakMID2_3_fromLate= (cluster4 + cluster5)/2 - (cluster2 + cluster3)/2) %>%
+  dplyr::mutate(PeakMID3_4_fromEarly= (cluster1 +cluster2)/2 - (cluster3 + cluster4)/2) %>%
+  dplyr::mutate(PeakMID3_4_fromLate= cluster5 - (cluster3 + cluster4)/2) %>%
+  dplyr::mutate(Name=row.names(x)) %>%
+  dplyr::mutate(Level=rep("Vertebrate", 
+                          length(Vertebrate_1to1_Rank_contrast_clust5)))
+
+#Vertebrate hourglass peak 
+length(which(Vertebrate1to1_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  
+               Vertebrate1to1_contrast_clust5_peakedness$Peak3_fromLate > 0))/length(Vertebrate1to1_contrast_clust5_peakedness$Peak3_fromEarly)
+#Vertebrate inverse hourglass
+length(which(Vertebrate1to1_contrast_clust5_peakedness$Peak3_fromEarly < 0 &  
+               Vertebrate1to1_contrast_clust5_peakedness$Peak3_fromLate < 0))/length(Vertebrate1to1_contrast_clust5_peakedness$Peak3_fromEarly)
+#Vertebrate early conservation
+length(which(Vertebrate1to1_contrast_clust5_peakedness$Peak3_fromEarly < 0 &  
+               Vertebrate1to1_contrast_clust5_peakedness$Peak3_fromLate > 0))/length(Vertebrate1to1_contrast_clust5_peakedness$Peak3_fromEarly)
+#Vertebrate late convergence
+length(which(Vertebrate1to1_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  
+               Vertebrate1to1_contrast_clust5_peakedness$Peak3_fromLate < 0))/length(Vertebrate1to1_contrast_clust5_peakedness$Peak3_fromEarly)
+```
+
+Generate data frame that calculates proportion of OGGs following different evolutionary hypotheses (i.e., hourglass, inverse hourglass, early conservation, late conservation)
+```{r}
+level=c("amniote", "frog", "anamiote", "vertebrate")
+level=factor(level, levels=level)
+percent_hourglass_at3<-c(length(which(Amniote1to1_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  
+               Amniote1to1_contrast_clust5_peakedness$Peak3_fromLate > 0))/length(Amniote1to1_contrast_clust5_peakedness$Peak3_fromEarly), 
+               length(which(Frog1to1_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  
+               Frog1to1_contrast_clust5_peakedness$Peak3_fromLate > 0))/length(Frog1to1_contrast_clust5_peakedness$Peak3_fromEarly),
+               length(which(Anamniote1to1_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  
+               Anamniote1to1_contrast_clust5_peakedness$Peak3_fromLate > 0))/length(Anamniote1to1_contrast_clust5_peakedness$Peak3_fromEarly),
+               length(which(Vertebrate1to1_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  
+               Vertebrate1to1_contrast_clust5_peakedness$Peak3_fromLate > 0))/length(Vertebrate1to1_contrast_clust5_peakedness$Peak3_fromEarly))
+percent_earlycons_at3<-c(length(which(Amniote1to1_contrast_clust5_peakedness$Peak3_fromEarly < 0 &  
+               Amniote1to1_contrast_clust5_peakedness$Peak3_fromLate > 0))/length(Amniote1to1_contrast_clust5_peakedness$Peak3_fromEarly), 
+               length(which(Frog1to1_contrast_clust5_peakedness$Peak3_fromEarly < 0 &  
+               Frog1to1_contrast_clust5_peakedness$Peak3_fromLate > 0))/length(Frog1to1_contrast_clust5_peakedness$Peak3_fromEarly),
+               length(which(Anamniote1to1_contrast_clust5_peakedness$Peak3_fromEarly < 0 &  
+               Anamniote1to1_contrast_clust5_peakedness$Peak3_fromLate > 0))/length(Anamniote1to1_contrast_clust5_peakedness$Peak3_fromEarly),
+               length(which(Vertebrate1to1_contrast_clust5_peakedness$Peak3_fromEarly < 0 &  
+               Vertebrate1to1_contrast_clust5_peakedness$Peak3_fromLate > 0))/length(Vertebrate1to1_contrast_clust5_peakedness$Peak3_fromEarly))
+percent_latecons_at3<-c(length(which(Amniote1to1_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  
+               Amniote1to1_contrast_clust5_peakedness$Peak3_fromLate < 0))/length(Amniote1to1_contrast_clust5_peakedness$Peak3_fromEarly), 
+               length(which(Frog1to1_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  
+               Frog1to1_contrast_clust5_peakedness$Peak3_fromLate < 0))/length(Frog1to1_contrast_clust5_peakedness$Peak3_fromEarly),
+               length(which(Anamniote1to1_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  
+               Anamniote1to1_contrast_clust5_peakedness$Peak3_fromLate < 0))/length(Anamniote1to1_contrast_clust5_peakedness$Peak3_fromEarly),
+               length(which(Vertebrate1to1_contrast_clust5_peakedness$Peak3_fromEarly > 0 &  
+               Vertebrate1to1_contrast_clust5_peakedness$Peak3_fromLate < 0))/length(Vertebrate1to1_contrast_clust5_peakedness$Peak3_fromEarly))
+percent_inverseHour_at3<-c(length(which(Amniote1to1_contrast_clust5_peakedness$Peak3_fromEarly < 0 &  
+               Amniote1to1_contrast_clust5_peakedness$Peak3_fromLate < 0))/length(Amniote1to1_contrast_clust5_peakedness$Peak3_fromEarly), 
+               length(which(Frog1to1_contrast_clust5_peakedness$Peak3_fromEarly < 0 &  
+               Frog1to1_contrast_clust5_peakedness$Peak3_fromLate < 0))/length(Frog1to1_contrast_clust5_peakedness$Peak3_fromEarly),
+               length(which(Anamniote1to1_contrast_clust5_peakedness$Peak3_fromEarly < 0 &  
+               Anamniote1to1_contrast_clust5_peakedness$Peak3_fromLate < 0))/length(Anamniote1to1_contrast_clust5_peakedness$Peak3_fromEarly),
+               length(which(Vertebrate1to1_contrast_clust5_peakedness$Peak3_fromEarly < 0 &  
+               Vertebrate1to1_contrast_clust5_peakedness$Peak3_fromLate < 0))/length(Vertebrate1to1_contrast_clust5_peakedness$Peak3_fromEarly))
+
+percent_hourglass_at2<-c(length(which(Amniote1to1_contrast_clust5_peakedness$Peak2_fromEarly > 0 &  
+               Amniote1to1_contrast_clust5_peakedness$Peak2_fromLate > 0))/length(Amniote1to1_contrast_clust5_peakedness$Peak2_fromEarly), 
+               length(which(Frog1to1_contrast_clust5_peakedness$Peak2_fromEarly > 0 &  
+               Frog1to1_contrast_clust5_peakedness$Peak2_fromLate > 0))/length(Frog1to1_contrast_clust5_peakedness$Peak2_fromEarly),
+               length(which(Anamniote1to1_contrast_clust5_peakedness$Peak2_fromEarly > 0 &  
+               Anamniote1to1_contrast_clust5_peakedness$Peak2_fromLate > 0))/length(Anamniote1to1_contrast_clust5_peakedness$Peak2_fromEarly),
+               length(which(Vertebrate1to1_contrast_clust5_peakedness$Peak2_fromEarly > 0 &  
+               Vertebrate1to1_contrast_clust5_peakedness$Peak2_fromLate > 0))/length(Vertebrate1to1_contrast_clust5_peakedness$Peak2_fromEarly))
+percent_earlycons_at2<-c(length(which(Amniote1to1_contrast_clust5_peakedness$Peak2_fromEarly < 0 &  
+               Amniote1to1_contrast_clust5_peakedness$Peak2_fromLate > 0))/length(Amniote1to1_contrast_clust5_peakedness$Peak2_fromEarly), 
+               length(which(Frog1to1_contrast_clust5_peakedness$Peak2_fromEarly < 0 &  
+               Frog1to1_contrast_clust5_peakedness$Peak2_fromLate > 0))/length(Frog1to1_contrast_clust5_peakedness$Peak2_fromEarly),
+               length(which(Anamniote1to1_contrast_clust5_peakedness$Peak2_fromEarly < 0 &  
+               Anamniote1to1_contrast_clust5_peakedness$Peak2_fromLate > 0))/length(Anamniote1to1_contrast_clust5_peakedness$Peak2_fromEarly),
+               length(which(Vertebrate1to1_contrast_clust5_peakedness$Peak2_fromEarly < 0 &  
+               Vertebrate1to1_contrast_clust5_peakedness$Peak2_fromLate > 0))/length(Vertebrate1to1_contrast_clust5_peakedness$Peak2_fromEarly))
+percent_latecons_at2<-c(length(which(Amniote1to1_contrast_clust5_peakedness$Peak2_fromEarly > 0 &  
+               Amniote1to1_contrast_clust5_peakedness$Peak2_fromLate < 0))/length(Amniote1to1_contrast_clust5_peakedness$Peak2_fromEarly), 
+               length(which(Frog1to1_contrast_clust5_peakedness$Peak2_fromEarly > 0 &  
+               Frog1to1_contrast_clust5_peakedness$Peak2_fromLate < 0))/length(Frog1to1_contrast_clust5_peakedness$Peak2_fromEarly),
+               length(which(Anamniote1to1_contrast_clust5_peakedness$Peak2_fromEarly > 0 &  
+               Anamniote1to1_contrast_clust5_peakedness$Peak2_fromLate < 0))/length(Anamniote1to1_contrast_clust5_peakedness$Peak2_fromEarly),
+               length(which(Vertebrate1to1_contrast_clust5_peakedness$Peak2_fromEarly > 0 &  
+               Vertebrate1to1_contrast_clust5_peakedness$Peak2_fromLate < 0))/length(Vertebrate1to1_contrast_clust5_peakedness$Peak2_fromEarly))
+percent_inverseHour_at2<-c(length(which(Amniote1to1_contrast_clust5_peakedness$Peak2_fromEarly < 0 &  
+               Amniote1to1_contrast_clust5_peakedness$Peak2_fromLate < 0))/length(Amniote1to1_contrast_clust5_peakedness$Peak2_fromEarly), 
+               length(which(Frog1to1_contrast_clust5_peakedness$Peak2_fromEarly < 0 &  
+               Frog1to1_contrast_clust5_peakedness$Peak2_fromLate < 0))/length(Frog1to1_contrast_clust5_peakedness$Peak2_fromEarly),
+               length(which(Anamniote1to1_contrast_clust5_peakedness$Peak2_fromEarly < 0 &  
+               Anamniote1to1_contrast_clust5_peakedness$Peak2_fromLate < 0))/length(Anamniote1to1_contrast_clust5_peakedness$Peak2_fromEarly),
+               length(which(Vertebrate1to1_contrast_clust5_peakedness$Peak2_fromEarly < 0 &  
+               Vertebrate1to1_contrast_clust5_peakedness$Peak2_fromLate < 0))/length(Vertebrate1to1_contrast_clust5_peakedness$Peak2_fromEarly))
+
+percent_hourglass_at4<-c(length(which(Amniote1to1_contrast_clust5_peakedness$Peak4_fromEarly > 0 &  
+               Amniote1to1_contrast_clust5_peakedness$Peak4_fromLate > 0))/length(Amniote1to1_contrast_clust5_peakedness$Peak4_fromEarly), 
+               length(which(Frog1to1_contrast_clust5_peakedness$Peak4_fromEarly > 0 &  
+               Frog1to1_contrast_clust5_peakedness$Peak4_fromLate > 0))/length(Frog1to1_contrast_clust5_peakedness$Peak4_fromEarly),
+               length(which(Anamniote1to1_contrast_clust5_peakedness$Peak4_fromEarly > 0 &  
+               Anamniote1to1_contrast_clust5_peakedness$Peak4_fromLate > 0))/length(Anamniote1to1_contrast_clust5_peakedness$Peak4_fromEarly),
+               length(which(Vertebrate1to1_contrast_clust5_peakedness$Peak4_fromEarly > 0 &  
+               Vertebrate1to1_contrast_clust5_peakedness$Peak4_fromLate > 0))/length(Vertebrate1to1_contrast_clust5_peakedness$Peak4_fromEarly))
+percent_earlycons_at4<-c(length(which(Amniote1to1_contrast_clust5_peakedness$Peak4_fromEarly < 0 &  
+               Amniote1to1_contrast_clust5_peakedness$Peak4_fromLate > 0))/length(Amniote1to1_contrast_clust5_peakedness$Peak4_fromEarly), 
+               length(which(Frog1to1_contrast_clust5_peakedness$Peak4_fromEarly < 0 &  
+               Frog1to1_contrast_clust5_peakedness$Peak4_fromLate > 0))/length(Frog1to1_contrast_clust5_peakedness$Peak4_fromEarly),
+               length(which(Anamniote1to1_contrast_clust5_peakedness$Peak4_fromEarly < 0 &  
+               Anamniote1to1_contrast_clust5_peakedness$Peak4_fromLate > 0))/length(Anamniote1to1_contrast_clust5_peakedness$Peak4_fromEarly),
+               length(which(Vertebrate1to1_contrast_clust5_peakedness$Peak4_fromEarly < 0 &  
+               Vertebrate1to1_contrast_clust5_peakedness$Peak4_fromLate > 0))/length(Vertebrate1to1_contrast_clust5_peakedness$Peak4_fromEarly))
+percent_latecons_at4<-c(length(which(Amniote1to1_contrast_clust5_peakedness$Peak4_fromEarly > 0 &  
+               Amniote1to1_contrast_clust5_peakedness$Peak4_fromLate < 0))/length(Amniote1to1_contrast_clust5_peakedness$Peak4_fromEarly), 
+               length(which(Frog1to1_contrast_clust5_peakedness$Peak4_fromEarly > 0 &  
+               Frog1to1_contrast_clust5_peakedness$Peak4_fromLate < 0))/length(Frog1to1_contrast_clust5_peakedness$Peak4_fromEarly),
+               length(which(Anamniote1to1_contrast_clust5_peakedness$Peak4_fromEarly > 0 &  
+               Anamniote1to1_contrast_clust5_peakedness$Peak4_fromLate < 0))/length(Anamniote1to1_contrast_clust5_peakedness$Peak4_fromEarly),
+               length(which(Vertebrate1to1_contrast_clust5_peakedness$Peak4_fromEarly > 0 &  
+               Vertebrate1to1_contrast_clust5_peakedness$Peak4_fromLate < 0))/length(Vertebrate1to1_contrast_clust5_peakedness$Peak4_fromEarly))
+percent_inverseHour_at4<-c(length(which(Amniote1to1_contrast_clust5_peakedness$Peak4_fromEarly < 0 &  
+               Amniote1to1_contrast_clust5_peakedness$Peak4_fromLate < 0))/length(Amniote1to1_contrast_clust5_peakedness$Peak4_fromEarly), 
+               length(which(Frog1to1_contrast_clust5_peakedness$Peak4_fromEarly < 0 &  
+               Frog1to1_contrast_clust5_peakedness$Peak4_fromLate < 0))/length(Frog1to1_contrast_clust5_peakedness$Peak4_fromEarly),
+               length(which(Anamniote1to1_contrast_clust5_peakedness$Peak4_fromEarly < 0 &  
+               Anamniote1to1_contrast_clust5_peakedness$Peak4_fromLate < 0))/length(Anamniote1to1_contrast_clust5_peakedness$Peak4_fromEarly),
+               length(which(Vertebrate1to1_contrast_clust5_peakedness$Peak4_fromEarly < 0 &  
+               Vertebrate1to1_contrast_clust5_peakedness$Peak4_fromLate < 0))/length(Vertebrate1to1_contrast_clust5_peakedness$Peak4_fromEarly))
+
+#MID is the average of 2, 3, and 4
+percent_hourglass_MID<-c(length(which(Amniote1to1_contrast_clust5_peakedness$PeakMID_fromEarly > 0 &  
+               Amniote1to1_contrast_clust5_peakedness$PeakMID_fromLate > 0))/length(Amniote1to1_contrast_clust5_peakedness$PeakMID_fromEarly), 
+               length(which(Frog1to1_contrast_clust5_peakedness$PeakMID_fromEarly > 0 &  
+               Frog1to1_contrast_clust5_peakedness$PeakMID_fromLate > 0))/length(Frog1to1_contrast_clust5_peakedness$PeakMID_fromEarly),
+               length(which(Anamniote1to1_contrast_clust5_peakedness$PeakMID_fromEarly > 0 &  
+               Anamniote1to1_contrast_clust5_peakedness$PeakMID_fromLate > 0))/length(Anamniote1to1_contrast_clust5_peakedness$PeakMID_fromEarly),
+               length(which(Vertebrate1to1_contrast_clust5_peakedness$PeakMID_fromEarly > 0 &  
+               Vertebrate1to1_contrast_clust5_peakedness$PeakMID_fromLate > 0))/length(Vertebrate1to1_contrast_clust5_peakedness$PeakMID_fromEarly))
+percent_earlycons_MID<-c(length(which(Amniote1to1_contrast_clust5_peakedness$PeakMID_fromEarly < 0 &  
+               Amniote1to1_contrast_clust5_peakedness$PeakMID_fromLate > 0))/length(Amniote1to1_contrast_clust5_peakedness$PeakMID_fromEarly), 
+               length(which(Frog1to1_contrast_clust5_peakedness$PeakMID_fromEarly < 0 &  
+               Frog1to1_contrast_clust5_peakedness$PeakMID_fromLate > 0))/length(Frog1to1_contrast_clust5_peakedness$PeakMID_fromEarly),
+               length(which(Anamniote1to1_contrast_clust5_peakedness$PeakMID_fromEarly < 0 &  
+               Anamniote1to1_contrast_clust5_peakedness$PeakMID_fromLate > 0))/length(Anamniote1to1_contrast_clust5_peakedness$PeakMID_fromEarly),
+               length(which(Vertebrate1to1_contrast_clust5_peakedness$PeakMID_fromEarly < 0 &  
+               Vertebrate1to1_contrast_clust5_peakedness$PeakMID_fromLate > 0))/length(Vertebrate1to1_contrast_clust5_peakedness$PeakMID_fromEarly))
+percent_latecons_MID<-c(length(which(Amniote1to1_contrast_clust5_peakedness$PeakMID_fromEarly > 0 &  
+               Amniote1to1_contrast_clust5_peakedness$PeakMID_fromLate < 0))/length(Amniote1to1_contrast_clust5_peakedness$PeakMID_fromEarly), 
+               length(which(Frog1to1_contrast_clust5_peakedness$PeakMID_fromEarly > 0 &  
+               Frog1to1_contrast_clust5_peakedness$PeakMID_fromLate < 0))/length(Frog1to1_contrast_clust5_peakedness$PeakMID_fromEarly),
+               length(which(Anamniote1to1_contrast_clust5_peakedness$PeakMID_fromEarly > 0 &  
+               Anamniote1to1_contrast_clust5_peakedness$PeakMID_fromLate < 0))/length(Anamniote1to1_contrast_clust5_peakedness$PeakMID_fromEarly),
+               length(which(Vertebrate1to1_contrast_clust5_peakedness$PeakMID_fromEarly > 0 &  
+               Vertebrate1to1_contrast_clust5_peakedness$PeakMID_fromLate < 0))/length(Vertebrate1to1_contrast_clust5_peakedness$PeakMID_fromEarly))
+percent_inverseHour_MID<-c(length(which(Amniote1to1_contrast_clust5_peakedness$PeakMID_fromEarly < 0 &  
+               Amniote1to1_contrast_clust5_peakedness$PeakMID_fromLate < 0))/length(Amniote1to1_contrast_clust5_peakedness$PeakMID_fromEarly), 
+               length(which(Frog1to1_contrast_clust5_peakedness$PeakMID_fromEarly < 0 &  
+               Frog1to1_contrast_clust5_peakedness$PeakMID_fromLate < 0))/length(Frog1to1_contrast_clust5_peakedness$PeakMID_fromEarly),
+               length(which(Anamniote1to1_contrast_clust5_peakedness$PeakMID_fromEarly < 0 &  
+               Anamniote1to1_contrast_clust5_peakedness$PeakMID_fromLate < 0))/length(Anamniote1to1_contrast_clust5_peakedness$PeakMID_fromEarly),
+               length(which(Vertebrate1to1_contrast_clust5_peakedness$PeakMID_fromEarly < 0 &  
+               Vertebrate1to1_contrast_clust5_peakedness$PeakMID_fromLate < 0))/length(Vertebrate1to1_contrast_clust5_peakedness$PeakMID_fromEarly))
+
+#MID2_3 is the average of 2 and 3
+percent_hourglass_MID2_3<-c(length(which(Amniote1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly > 0 &  
+               Amniote1to1_contrast_clust5_peakedness$PeakMID2_3_fromLate > 0))/length(Amniote1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly), 
+               length(which(Frog1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly > 0 &  
+               Frog1to1_contrast_clust5_peakedness$PeakMID2_3_fromLate > 0))/length(Frog1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly),
+               length(which(Anamniote1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly > 0 &  
+               Anamniote1to1_contrast_clust5_peakedness$PeakMID2_3_fromLate > 0))/length(Anamniote1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly),
+               length(which(Vertebrate1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly > 0 &  
+               Vertebrate1to1_contrast_clust5_peakedness$PeakMID2_3_fromLate > 0))/length(Vertebrate1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly))
+percent_earlycons_MID2_3<-c(length(which(Amniote1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly < 0 &  
+               Amniote1to1_contrast_clust5_peakedness$PeakMID2_3_fromLate > 0))/length(Amniote1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly), 
+               length(which(Frog1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly < 0 &  
+               Frog1to1_contrast_clust5_peakedness$PeakMID2_3_fromLate > 0))/length(Frog1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly),
+               length(which(Anamniote1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly < 0 &  
+               Anamniote1to1_contrast_clust5_peakedness$PeakMID2_3_fromLate > 0))/length(Anamniote1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly),
+               length(which(Vertebrate1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly < 0 &  
+               Vertebrate1to1_contrast_clust5_peakedness$PeakMID2_3_fromLate > 0))/length(Vertebrate1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly))
+percent_latecons_MID2_3<-c(length(which(Amniote1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly > 0 &  
+               Amniote1to1_contrast_clust5_peakedness$PeakMID2_3_fromLate < 0))/length(Amniote1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly), 
+               length(which(Frog1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly > 0 &  
+               Frog1to1_contrast_clust5_peakedness$PeakMID2_3_fromLate < 0))/length(Frog1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly),
+               length(which(Anamniote1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly > 0 &  
+               Anamniote1to1_contrast_clust5_peakedness$PeakMID2_3_fromLate < 0))/length(Anamniote1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly),
+               length(which(Vertebrate1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly > 0 &  
+               Vertebrate1to1_contrast_clust5_peakedness$PeakMID2_3_fromLate < 0))/length(Vertebrate1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly))
+percent_inverseHour_MID2_3<-c(length(which(Amniote1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly < 0 &  
+               Amniote1to1_contrast_clust5_peakedness$PeakMID2_3_fromLate < 0))/length(Amniote1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly), 
+               length(which(Frog1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly < 0 &  
+               Frog1to1_contrast_clust5_peakedness$PeakMID2_3_fromLate < 0))/length(Frog1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly),
+               length(which(Anamniote1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly < 0 &  
+               Anamniote1to1_contrast_clust5_peakedness$PeakMID2_3_fromLate < 0))/length(Anamniote1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly),
+               length(which(Vertebrate1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly < 0 &  
+               Vertebrate1to1_contrast_clust5_peakedness$PeakMID2_3_fromLate < 0))/length(Vertebrate1to1_contrast_clust5_peakedness$PeakMID2_3_fromEarly))
+
+#MID2_3 is the average of 3 and 4
+percent_hourglass_MID3_4<-c(length(which(Amniote1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly > 0 &  
+               Amniote1to1_contrast_clust5_peakedness$PeakMID3_4_fromLate > 0))/length(Amniote1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly), 
+               length(which(Frog1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly > 0 &  
+               Frog1to1_contrast_clust5_peakedness$PeakMID3_4_fromLate > 0))/length(Frog1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly),
+               length(which(Anamniote1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly > 0 &  
+               Anamniote1to1_contrast_clust5_peakedness$PeakMID3_4_fromLate > 0))/length(Anamniote1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly),
+               length(which(Vertebrate1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly > 0 &  
+               Vertebrate1to1_contrast_clust5_peakedness$PeakMID3_4_fromLate > 0))/length(Vertebrate1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly))
+percent_earlycons_MID3_4<-c(length(which(Amniote1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly < 0 &  
+               Amniote1to1_contrast_clust5_peakedness$PeakMID3_4_fromLate > 0))/length(Amniote1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly), 
+               length(which(Frog1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly < 0 &  
+               Frog1to1_contrast_clust5_peakedness$PeakMID3_4_fromLate > 0))/length(Frog1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly),
+               length(which(Anamniote1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly < 0 &  
+               Anamniote1to1_contrast_clust5_peakedness$PeakMID3_4_fromLate > 0))/length(Anamniote1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly),
+               length(which(Vertebrate1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly < 0 &  
+               Vertebrate1to1_contrast_clust5_peakedness$PeakMID3_4_fromLate > 0))/length(Vertebrate1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly))
+percent_latecons_MID3_4<-c(length(which(Amniote1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly > 0 &  
+               Amniote1to1_contrast_clust5_peakedness$PeakMID3_4_fromLate < 0))/length(Amniote1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly), 
+               length(which(Frog1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly > 0 &  
+               Frog1to1_contrast_clust5_peakedness$PeakMID3_4_fromLate < 0))/length(Frog1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly),
+               length(which(Anamniote1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly > 0 &  
+               Anamniote1to1_contrast_clust5_peakedness$PeakMID3_4_fromLate < 0))/length(Anamniote1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly),
+               length(which(Vertebrate1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly > 0 &  
+               Vertebrate1to1_contrast_clust5_peakedness$PeakMID3_4_fromLate < 0))/length(Vertebrate1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly))
+percent_inverseHour_MID3_4<-c(length(which(Amniote1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly < 0 &  
+               Amniote1to1_contrast_clust5_peakedness$PeakMID3_4_fromLate < 0))/length(Amniote1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly), 
+               length(which(Frog1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly < 0 &  
+               Frog1to1_contrast_clust5_peakedness$PeakMID3_4_fromLate < 0))/length(Frog1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly),
+               length(which(Anamniote1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly < 0 &  
+               Anamniote1to1_contrast_clust5_peakedness$PeakMID3_4_fromLate < 0))/length(Anamniote1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly),
+               length(which(Vertebrate1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly < 0 &  
+               Vertebrate1to1_contrast_clust5_peakedness$PeakMID3_4_fromLate < 0))/length(Vertebrate1to1_contrast_clust5_peakedness$PeakMID3_4_fromEarly))
+
+w<-data.frame(level,
+              percent_hourglass_at3,
+              percent_earlycons_at3,
+              percent_latecons_at3,
+              percent_inverseHour_at3)
+w<-cbind.data.frame(w, rep("3", 4))
+colnames(w)<-c("level",
+               "hourglass", 
+               "early conservation",
+               "late conservation", 
+               "inverse hourglass", 
+               "peak spot")
+
+x<-data.frame(level,
+              percent_hourglass_at2,
+              percent_earlycons_at2,
+              percent_latecons_at2,
+              percent_inverseHour_at2)
+x<-cbind.data.frame(x, rep("2", 4))
+colnames(x)<-c("level",
+               "hourglass", 
+               "early conservation",
+               "late conservation", 
+               "inverse hourglass", 
+               "peak spot")
+
+y<-data.frame(level,
+              percent_hourglass_at4,
+              percent_earlycons_at4,
+              percent_latecons_at4,
+              percent_inverseHour_at4)
+y<-cbind.data.frame(y, rep("4", 4))
+colnames(y)<-c("level",
+               "hourglass", 
+               "early conservation",
+               "late conservation", 
+               "inverse hourglass", 
+               "peak spot")
+
+z<-data.frame(level,
+              percent_hourglass_MID,
+              percent_earlycons_MID,
+              percent_latecons_MID,
+              percent_inverseHour_MID)
+z<-cbind.data.frame(z, rep("MID", 4))
+colnames(z)<-c("level",
+               "hourglass", 
+               "early conservation",
+               "late conservation", 
+               "inverse hourglass", 
+               "peak spot")
+
+z1<-data.frame(level,
+              percent_hourglass_MID2_3,
+              percent_earlycons_MID2_3,
+              percent_latecons_MID2_3,
+              percent_inverseHour_MID2_3)
+z1<-cbind.data.frame(z1, rep("MID2_3", 4))
+colnames(z1)<-c("level",
+               "hourglass", 
+               "early conservation",
+               "late conservation", 
+               "inverse hourglass", 
+               "peak spot")
+
+z2<-data.frame(level,
+              percent_hourglass_MID3_4,
+              percent_earlycons_MID3_4,
+              percent_latecons_MID3_4,
+              percent_inverseHour_MID3_4)
+z2<-cbind.data.frame(z2, rep("MID3_4", 4))
+colnames(z2)<-c("level",
+               "hourglass", 
+               "early conservation",
+               "late conservation", 
+               "inverse hourglass", 
+               "peak spot")
+
+One2One_patterns_All<-rbind.data.frame(w,x,y,z, z1, z2)
+
+One2One_counts_All<-One2One_patterns_All[,2:5]*length(Vertebrate_1to1_Rank_contrast_clust5)
+One2One_counts_All<-cbind.data.frame(One2One_patterns_All[,c(1,6)], One2One_counts_All)
+#row.names(OGGcounts_All)<-level
+
+#chisq test of each row. 
+apply(One2One_counts_All[,3:6], 1, chisq.test)
+
+
+#cleanup
+rm(list=ls(pattern="percent_early"))
+rm(list=ls(pattern="percent_late"))
+rm(list=ls(pattern="percent_inverse"))
+rm(w, x, y, z, z1, z2)
+```
+
+plot  proportion by each "type"
+```{r}
+x<-melt(One2One_patterns_All)
+x$variable<-factor(x$variable, levels=c("hourglass", 
+                                        "inverse hourglass", 
+                                        "early conservation",
+                                        "late conservation"))
+#pdf("HypothesisProporation_1to1.pdf", useDingbats = FALSE)
+ggplot(x, 
+       aes(x=level, 
+           y=value, 
+           fill=variable))+
+  geom_bar(stat="identity", 
+           position = position_fill(reverse = TRUE)) +
+  facet_grid(~`peak spot`) +
+  scale_y_continuous(expand = c(0,0), 
+                     limits = c(0,1)) +
+  theme(axis.text.x=element_text(angle=290,
+                                 hjust=0.1))
+#dev.off()
+
+#pdf("HypothesisProportion_allPeakedness_1to1.pdf", useDingbats = FALSE)
+ggplot(x, aes(x=level, 
+              y=value, 
+              fill=variable))+
+  geom_boxplot()
+#dev.off()
+```
+
+```{r, stats for above hypothesis boxplot}
+#x defined above
+level=c("amniote", "frog", "anamiote", "vertebrate")
+for (i in level) { 
+  print(i)
+  data = dplyr::filter(x, level == i) 
+  print(summary(aov(value~variable, 
+            data=data)))
+  print(TukeyHSD(aov(value~variable, 
+             data=data)))
+  }
+```
+
+kmeans on gene contrasts to identify the number of types across time clusters. k_optimum from Kmeans_Stages.Rmd adjusted to allow for iter.max run on Contrasts or genes. For now, both... 
+
+```{r gene_kmeans}
+k_optimum_iter<- function (mydata,k,iter,z) {
+  sp=z
+  #wss <- (nrow(mydata)-1)*sum(apply(mydata,2,var)) #this returns the w/in ss
+  #for (i in 2:k) wss[i] <- sum(kmeans(mydata,
+                                       #centers=i)$withinss)
+  #y<-wss
+  percent_explained<-c()
+  for (i in 1:k) percent_explained[i] <- (kmeans(mydata,
+                                                 i, 
+                                                 iter.max =iter))$betweenss/
+    (kmeans(mydata,i, iter.max =iter))$totss
+  y<-percent_explained
+  return(y)}
+
+#k=20
+#iter=15
+#x<-rbind.data.frame(k_optimum_iter(t(Amniote_1to1_Rank_contrast_clust5),
+#                                  k,iter, "Amniote"),
+#                   k_optimum_iter(t(Frog_1to1_Rank_contrast_clust5),
+#                                  k, iter, "Frogs"), 
+#                   k_optimum_iter(t(Anamniote_1to1_Rank_contrast_clust5),
+#                                  k,iter, "Anamniote"),
+#                   k_optimum_iter(t(Vertebrate_1to1_Rank_contrast_clust5),
+#                                  k,iter, "Vertebrate"))
+#row.names(x)<-c("Amniote", 
+#                                       "Frog", 
+#                                       "Anamniote", 
+#                                       "Vertebrate")
+#colnames(x)<-1:k
+
+########################run on 1 to 1 orthologs across species
+k=20
+iter=15
+x<-rbind.data.frame(k_optimum_iter(t(Mus_1to1_MeanBYclust5),
+                                  k,iter, "Mus"),
+                   k_optimum_iter(t(Gal_1to1_MeanBYclust5),
+                                  k, iter, "Gallus"), 
+                   k_optimum_iter(t(Xlaev_1to1_MeanBYclust5),
+                                  k,iter, "X.laevis"),
+                   k_optimum_iter(t(Xtrop_1to1_MeanBYclust5),
+                                  k,iter, "X.tropicalis"),
+                   k_optimum_iter(t(Dan_1to1_MeanBYclust5),
+                                  k,iter, "Danio"))
+row.names(x)<-c("Mus",
+                "Gallus",
+                "X.laevis",
+                "X.tropicalis", 
+                "Danio")
+colnames(x)<-1:k
+
+```
+plot kmeans elbow
+
+```{r kmeans_plot}
+x<-cbind.data.frame(sp=row.names(x),x)
+df<-melt(x)
+colnames(df)<-c("sp", "clusterNum", "PercentExpl")
+
+#pdf("k_GeneType_selection.pdf", useDingbats=FALSE)
+ggplot(data=df, aes(x=clusterNum, 
+                    y=PercentExpl, 
+                    group = sp, 
+                    colour = sp)) +
+    geom_line() +
+    geom_point( size=4, 
+                shape=21)+
+    theme_bw()+ theme(panel.border = element_blank(), 
+                      plot.background = element_blank(),
+                    panel.grid.major=element_blank(), 
+                    panel.grid.minor=element_blank()) + 
+    theme(axis.line.x =element_line(color = "black"))+
+    theme(axis.line.y =element_line(color = "black"))+
+    labs(x="cluster number", 
+         y="proportion of variance exprlained")
+#dev.off()
+
+rm(x)
+```
+
+genes by type cluster
+```{r}
+#mydata=t(Mus_1to1_MeanBYclust5)
+#k=10
+#iter=15
+#z="Mus"
+
+kmeans_ALL1to1_genes<- function (mydata,k,iter, z) {
+  kmeans_df <- data.frame() #accumulator for results
+  for(i in 2:k){ #run kmeans for all clusters up to 100
+  clusterID<-kmeans(x=mydata, centers=i, iter.max = iter )  #Run kmeans for each level of i
+  #Combine cluster number and cost together, write to df
+  kmeans_df<- rbind(kmeans_df, rbind(clusterID$cluster)) 
+  }
+  #kmeans_df<-rbind.data.frame(kmeans_df, GeneClust=colnames(kmeans_df))
+  row.names(kmeans_df)<-c(2:k)
+  kmeans_df<-cbind.data.frame(sp=rep(z, k-1), k=2:k, kmeans_df )
+  return(kmeans_df) }
+
+rm(kmeans_df)
+rm(mydata)
+rm(k)
+rm(iter)
+rm(z)
+```
+Label each 1 to 1 ortholog by the Gene cluster they fall in. Rows indicate the number of clusters
+```{r generate_GeneClust_key}
+Mus_1to1_GeneClustID<-kmeans_ALL1to1_genes(t(Mus_1to1_MeanBYclust5),
+                                           10, 10, "Mus")
+Gal_1to1_GeneClustID<-kmeans_ALL1to1_genes(t(Gal_1to1_MeanBYclust5),
+                                           10, 10, "Gallus")
+Xlaev_1to1_GeneClustID<-kmeans_ALL1to1_genes(t(Xlaev_1to1_MeanBYclust5),
+                                           10, 10, "X.laevis")
+Xtrop_1to1_GeneClustID<-kmeans_ALL1to1_genes(t(Xtrop_1to1_MeanBYclust5),
+                                           10, 10, "X.trop")
+Dan_1to1_GeneClustID<-kmeans_ALL1to1_genes(t(Dan_1to1_MeanBYclust5),
+                                           10, 10, "Danio")
+```
+
+need to pull out maybe a few k numbers of clusters and plot the genes and maybe the centers....

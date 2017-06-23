@@ -1166,21 +1166,18 @@ k_optimum_iter<- function (mydata,k,iter,z) {
 ########################run on 1 to 1 orthologs across species
 k=20
 iter=15
-x<-rbind.data.frame(k_optimum_iter(t(Mus_1to1_MeanBYclust5),
-                                  k,iter, "Mus"),
-                   k_optimum_iter(t(Gal_1to1_MeanBYclust5),
-                                  k, iter, "Gallus"), 
-                   k_optimum_iter(t(Xlaev_1to1_MeanBYclust5),
-                                  k,iter, "X.laevis"),
-                   k_optimum_iter(t(Xtrop_1to1_MeanBYclust5),
-                                  k,iter, "X.tropicalis"),
-                   k_optimum_iter(t(Dan_1to1_MeanBYclust5),
-                                  k,iter, "Danio"))
-row.names(x)<-c("Mus",
-                "Gallus",
-                "X.laevis",
-                "X.tropicalis", 
-                "Danio")
+x<-rbind.data.frame(k_optimum_iter(t(Amniote_1to1_Rank_contrast_clust5),
+                                  k,iter, "Amniote"),
+                   k_optimum_iter(t(Frog_1to1_Rank_contrast_clust5),
+                                  k, iter, "Frog"), 
+                   k_optimum_iter(t(Anamniote_1to1_Rank_contrast_clust5),
+                                  k,iter, "Anamniote"),
+                   k_optimum_iter(t(Vertebrate_1to1_Rank_contrast_clust5),
+                                  k,iter, "Vertebrate"))
+row.names(x)<-c("Amniote",
+                "Frog",
+                "Anamniote",
+                "Vertebrate")
 colnames(x)<-1:k
 
 ```
@@ -1217,38 +1214,57 @@ genes by type cluster
 #mydata=t(Mus_1to1_MeanBYclust5)
 #k=10
 #iter=15
-#z="Mus"
+#z="Amniote"
 
+#provides gene affiliation to ids
 kmeans_ALL1to1_genes<- function (mydata,k,iter, z) {
-  kmeans_df <- data.frame() #accumulator for results
+  kmeans<-list()
+  kmeans$IDs <- data.frame()#accumulator for results
+  kmeans$centers <- data.frame()
   for(i in 2:k){ #run kmeans for all clusters up to 100
   clusterID<-kmeans(x=mydata, centers=i, iter.max = iter )  #Run kmeans for each level of i
   #Combine cluster number and cost together, write to df
-  kmeans_df<- rbind(kmeans_df, rbind(clusterID$cluster)) 
+  kmeans$IDs<- rbind(kmeans$IDs, rbind(clusterID$cluster)) 
+  kmeans$centers<- rbind.data.frame(kmeans$centers, rbind.data.frame(clusterID$centers))
   }
   #kmeans_df<-rbind.data.frame(kmeans_df, GeneClust=colnames(kmeans_df))
-  row.names(kmeans_df)<-c(2:k)
-  kmeans_df<-cbind.data.frame(sp=rep(z, k-1), k=2:k, kmeans_df )
-  return(kmeans_df) }
+  row.names(kmeans$IDs)<-c(2:k)
+  kmeans$IDs<-cbind.data.frame(sp=rep(z, k-1), k=2:k, kmeans$IDs)
+  k.centerNum<-c()
+  k.numID<-c()
+  for (i in 2:k) {
+  k.center<-paste(i,".", 1:i, sep="")
+  k.centerNum<-append(k.centerNum, k.center)
+  k.num<-paste(rep(i, i))
+  k.numID<-append(k.numID, k.num)
+  }
+  k_num=data.frame(k.numID)
+  kmeans$centers<-cbind.data.frame(k_num, kmeans$centers)
+  row.names(kmeans$centers)<-k.centerNum
+  return(kmeans) 
+  }
 
 rm(kmeans_df)
 rm(mydata)
 rm(k)
 rm(iter)
 rm(z)
+rm(k.center)
+rm(k.centerNum)
+rm(k.num)
+rm(k.numID)
+rm(k.num)
+rm(kmeans)
+rm(k_num)
+
 ```
-Label each 1 to 1 ortholog by the Gene cluster they fall in. Rows indicate the number of clusters
-```{r generate_GeneClust_key}
-Mus_1to1_GeneClustID<-kmeans_ALL1to1_genes(t(Mus_1to1_MeanBYclust5),
-                                           10, 10, "Mus")
-Gal_1to1_GeneClustID<-kmeans_ALL1to1_genes(t(Gal_1to1_MeanBYclust5),
-                                           10, 10, "Gallus")
-Xlaev_1to1_GeneClustID<-kmeans_ALL1to1_genes(t(Xlaev_1to1_MeanBYclust5),
-                                           10, 10, "X.laevis")
-Xtrop_1to1_GeneClustID<-kmeans_ALL1to1_genes(t(Xtrop_1to1_MeanBYclust5),
-                                           10, 10, "X.trop")
-Dan_1to1_GeneClustID<-kmeans_ALL1to1_genes(t(Dan_1to1_MeanBYclust5),
-                                           10, 10, "Danio")
+
+Look at kmeans of contrast data each 1 to 1 ortholog phylo-contrast by the evolutionary type they fall in. Rows indicate the number of clusters
+```{r generate_ConstrastEvoType}
+Amniote_1to1_EvoType<-kmeans_ALL1to1_genes(t(Amniote_1to1_Rank_contrast_clust5), 20, 15, "Amniote")
+Frog_1to1_EvoType<-kmeans_ALL1to1_genes(t(Frog_1to1_Rank_contrast_clust5), 20, 15, "Frog")
+Anamniote_1to1_EvoType<-kmeans_ALL1to1_genes(t(Anamniote_1to1_Rank_contrast_clust5), 20, 15, "Anamniote")
+Vertebrate_1to1_EvoType<-kmeans_ALL1to1_genes(t(Vertebrate_1to1_Rank_contrast_clust5), 20, 15, "Vertebrate")
 ```
 
 need to pull out maybe a few k numbers of clusters and plot the genes and maybe the centers....
